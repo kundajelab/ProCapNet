@@ -1,0 +1,15 @@
+annotations/
+data/
+deepshap_out/
+figures/
+genomes/
+model_out/
+models/
+modisco_out/
+old_modisco_out/
+__pycache__/
+*/__pycache__/
+*/*/__pycache__/
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/
+*/*/.ipynb_checkpoints/
