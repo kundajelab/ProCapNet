@@ -6,7 +6,8 @@ import shutil
 
 
 # what model types are implemented (this must track with options allowed in train.py)
-MODEL_TYPES = ["strand_merged_umap", "stranded_umap", "strand_merged", "stranded", "EMD_strand_merged", "EMD_and_multinomial_strand_merged"]
+MODEL_TYPES = ["strand_merged_umap", "stranded_umap", "strand_merged", "stranded",
+               "halfstranded_prof_merged", "halfstranded_counts_merged", "logprof_strand_merged"]
 
 
 class FilesConfig():
@@ -143,9 +144,18 @@ class TrainWithDNasePeaksFilesConfig(TrainFilesConfig):
 
         # not cell-type-specific
         data_dir = self.proj_dir + "/".join(("data", self.data_type, "processed", self.cell_type)) + "/"
+        # the order of this list and the order of the source_fracs need to be the same
         self.train_peak_paths = [data_dir + "peaks_uni_and_bi_train.bed.gz",
                                 data_dir + "dnase_peaks_no_train_peaks_train.bed.gz"]
         self.source_fracs = [0.5, 0.5]
+        
+
+class TrainWithDNasePeaksUnbalancedFilesConfig(TrainWithDNasePeaksFilesConfig):
+    def __init__(self, cell_type, model_type, timestamp = None, data_type = "procap"):
+        
+        super().__init__(cell_type, model_type, timestamp = timestamp, data_type = data_type)
+
+        self.source_fracs = [0.875, 0.125]
         
         
 class ValFilesConfig(FilesConfig):
@@ -331,5 +341,68 @@ class ModiscoFilesConfig(FilesConfig):
         
         self.results_save_path = self.outputs_dir + "modisco_results.hd5"
         
+
+class MotifCallsFilesConfig(FilesConfig):
+    def __init__(self, cell_type, model_type, timestamp, modisco_task, score_task, data_type = "procap"):
         
+        super().__init__(cell_type, model_type, data_type)
+        
+        self.timestamp = timestamp
+        print("Timestamp: " + self.timestamp)
+        
+        # modisco_task = what task to get motifs from
+        # score_task = what task to use score tracks from in hit calling
+        assert modisco_task in ["profile", "counts"], modisco_task
+        assert score_task in ["profile", "counts"], score_task
+        self.modisco_task = modisco_task
+        self.score_task = score_task
+        
+        self.slice = 1000
+
+        # Data files (peaks, hypothetical scores)
+        
+        model_dir = self.proj_dir + "/".join(("models", self.data_type, self.cell_type, self.model_type)) + "/"
+        model_inputs_dir = model_dir + self.timestamp + "_in/"
+        
+        self.in_window, self.out_window = self.load_model_params(model_inputs_dir + "params.json")
+        
+        deepshap_dir = self.proj_dir + "/".join(("deepshap_out", self.data_type, self.cell_type, self.model_type)) + "/"
+        deepshap_inputs_dir = deepshap_dir + self.timestamp + "_in/"
+        
+        self.train_val_peak_path = deepshap_inputs_dir + "peaks_uni_and_bi_train_and_val.bed.gz"
+        
+        assert os.path.exists(self.train_val_peak_path), self.train_val_peak_path
+        
+        deepshap_outputs_dir = deepshap_dir + self.timestamp + "_out/"
+        
+        if self.score_task == "profile":
+            self.scores_path = deepshap_outputs_dir + "train_and_val_profile_deepshap.npy"
+        else:
+            self.scores_path = deepshap_outputs_dir + "train_and_val_counts_deepshap.npy"
+        
+        modisco_dir = self.proj_dir + "/".join(("modisco_out", self.data_type, self.cell_type, self.model_type)) + "/"
+        modisco_outputs_dir = modisco_dir + self.timestamp + "_" + modisco_task + "_out/"
+        
+        self.modisco_results_path = modisco_outputs_dir + "old_fmt_modisco_results.hd5"
+        
+        # Directory to save everything into
+
+        save_dir = self.proj_dir + "/".join(("motif_calls_out", self.data_type, self.cell_type, self.model_type)) + "/"
+        
+        # Filepaths for saving input files
+        
+        self.inputs_dir = save_dir + self.timestamp + "_" + score_task + "_in/"
+        
+        self.config_path = save_dir + self.timestamp + "_" + score_task + "_in/config.json"
+
+        self.input_files_to_copy = [self.chrom_sizes,
+                                    self.train_val_peak_path,
+                                    self.scores_path,
+                                    self.modisco_results_path]
+        
+        # Filepaths for saving outputs and various log files
+
+        self.outputs_dir = save_dir + self.timestamp + "_" + score_task + "_out/"
+        
+        self.results_save_path = self.outputs_dir + "motif_hits.bed"
     

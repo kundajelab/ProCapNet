@@ -1,28 +1,19 @@
 import os, sys
+sys.path.append("../2_train_models")
+
+from file_configs import ValFilesConfig, MotifCallsFilesConfig
 
 import numpy as np
 import pandas as pd
 import h5py
 import gzip
 
-import sklearn.cluster
-import scipy.cluster.hierarchy
-import scipy.stats
-
 import pomegranate
 
 import matplotlib.pyplot as plt
-import matplotlib.font_manager as font_manager
-
-import viz_sequence
-
 import vdom.helpers as vdomh
 from IPython.display import display
 import tqdm
-
-from file_configs import ModiscoFilesConfig, ValFilesConfig
-
-BACKGROUND_FREQS = np.array([0.25, 0.25, 0.25, 0.25])
 
 
 def import_motif_hits(motif_hits_path):
@@ -95,18 +86,20 @@ def get_peak_hits(peak_table, hit_table):
     For each peak, extracts the set of motif hits that fall in that peak.
     Returns a list mapping peak index to a subtable of `hit_table`. The index
     of the list is the index of the peak table.
+    
+    Note that this function is updated relative to older versions of itself,
+    to match the format of the hits table.
     """
     peak_hits = [pd.DataFrame(columns=list(hit_table))] * len(peak_table)
-    for peak_index, matches in tqdm.notebook.tqdm(hit_table.groupby("peak_index")):
-        # Check that all of the matches are indeed overlapping the peak
-        peak_row = peak_table.iloc[peak_index]
-        chrom, start, end = peak_row["chrom"], peak_row["peak_start"], peak_row["peak_end"]
-        assert np.all(matches["chrom"] == chrom)
-        assert np.all((matches["start"] < end) & (start < matches["end"]))
-        
-        peak_hits[peak_index] = matches
-    return peak_hits
 
+    peak_indexes = peak_table["index"].values
+    actual_indexes = list(peak_table.index)
+    peak_index_to_actual_index = dict(zip(peak_indexes, actual_indexes))
+
+    for peak_index, matches in hit_table.groupby("peak_index"):
+        if peak_index in peak_index_to_actual_index:
+            peak_hits[peak_index_to_actual_index[peak_index]] = matches
+    return peak_hits
 
 def get_peak_motif_counts(peak_hits, motif_keys):
     """
@@ -276,7 +269,7 @@ def make_peak_table(peak_path, in_window):
     return peak_table
 
 
-def fix_peak_table(train_val_peak_table, val_peak_table):
+def filter_train_val_to_val(train_val_peak_table, val_peak_table):
     del val_peak_table["index"]
     del val_peak_table["summit_offset"]
     
@@ -284,55 +277,42 @@ def fix_peak_table(train_val_peak_table, val_peak_table):
                               on=["peak_chrom", "peak_start", "peak_end"])
 
 
-def get_peak_hits_with_fix(peak_table, hit_table):
-    """
-    For each peak, extracts the set of motif hits that fall in that peak.
-    Returns a list mapping peak index to a subtable of `hit_table`. The index
-    of the list is the index of the peak table.
-    """
-    peak_hits = [pd.DataFrame(columns=list(hit_table))] * len(peak_table)
-
-    peak_indexes = peak_table["index"].values
-    actual_indexes = list(peak_table.index)
-    peak_index_to_actual_index = dict(zip(peak_indexes, actual_indexes))
-
-    for peak_index, matches in hit_table.groupby("peak_index"):
-        if peak_index in peak_index_to_actual_index:
-            peak_hits[peak_index_to_actual_index[peak_index]] = matches
-    return peak_hits
-
-
-def load_motif_hits(cell_type, timestamp, model_type, data_type,
-                    task = "profile", fdr=0.05):
+def load_motif_hits(cell_type, model_type, timestamp, fdr_cutoff=0.05,
+                    tasks=["profile", "counts"], filter_to_val_peaks=False):
+    filtered_hits = dict()
+    peak_hits = dict()
+    peak_hit_counts = dict()
     
-    # load in the motif hits file as a table
-    modisco_config = ModiscoFilesConfig(cell_type, model_type,
-                                        timestamp, task, data_type)
-    modisco_results_dir = os.path.dirname(modisco_config.results_save_path)
-    modisco_hits_path = os.path.join(modisco_results_dir, "motif_hits.bed")
-    hits = import_motif_hits(modisco_hits_path)
-    motif_keys = list(set(hits["key"]))
+    for task in tasks:
+        # "profile" here means load the motif hits corresponding to scanning
+        # with the modisco hits from the profile task
+        config = MotifCallsFilesConfig(cell_type, model_type, timestamp, "profile", task)
+        in_window = config.in_window
+        train_val_peak_path = config.train_val_peak_path
+        motif_hits_path = config.results_save_path
 
-    # Filter motif hit table by p-value using FDR estimation
-    filtered_hits = filter_peak_hits_by_fdr(hits,
-                            score_column="fann_perclasssum_perc",
-                            fdr_cutoff=fdr)
+        hits = import_motif_hits(motif_hits_path)
+        motif_keys = list(set(hits["key"]))
 
-    # Match peaks to motif hits
-    train_val_peak_table = make_peak_table(modisco_config.train_val_peak_path,
-                                           modisco_config.in_window)
+        # Filter motif hit table by p-value using FDR estimation
+        filtered_hits[task] = filter_peak_hits_by_fdr(hits, fdr_cutoff=fdr_cutoff)
 
-    # We need to subset to just the peaks in the val set (TODO: change to test set)
-    val_config = ValFilesConfig(cell_type, model_type,
-                                timestamp, data_type)
-    val_peak_table = make_peak_table(val_config.val_peak_path,
-                                     modisco_config.in_window)
-    peak_table = fix_peak_table(train_val_peak_table, val_peak_table)
+        train_val_peak_table = make_peak_table(train_val_peak_path, in_window)
+        
+        if filter_to_val_peaks:
+             # We need to subset to just the peaks in the val set (TODO: change to test set)
+            val_config = ValFilesConfig(cell_type, model_type, timestamp)
+            val_peak_table = make_peak_table(val_config.val_peak_path, in_window)
+            val_peak_table = filter_train_val_to_val(train_val_peak_table, val_peak_table)
+            
+            # Match peaks to motif hits
+            peak_hits[task] = get_peak_hits(val_peak_table, filtered_hits[task])
+        else:
+            # Match peaks to motif hits
+            peak_hits[task] = get_peak_hits(train_val_peak_table, filtered_hits[task])
 
-    peak_hits = get_peak_hits_with_fix(peak_table, filtered_hits)
-
-    # Count hits of each motif in each peak
-    peak_hit_counts = get_peak_motif_counts(peak_hits, motif_keys)
+        # Count hits of each motif in each peak
+        peak_hit_counts[task] = get_peak_motif_counts(peak_hits[task], motif_keys)
     
     return filtered_hits, peak_hits, peak_hit_counts
 

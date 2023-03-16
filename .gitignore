@@ -7,6 +7,8 @@ model_out/
 models/
 modisco_out/
 old_modisco_out/
+motif_calls_out/
+ism_out/
 __pycache__/
 */__pycache__/
 */*/__pycache__/

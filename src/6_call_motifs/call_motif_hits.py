@@ -11,41 +11,37 @@ import gzip
 import modisco
 from modisco.hit_scoring import densityadapted_hitscoring
 
-from utils import load_json
+from utils import ensure_parent_dir_exists
+from file_configs import MotifCallsFilesConfig
 from modiscolite_utils import load_sequences, load_scores
 from old_modisco_format_utils import import_tfmodisco_results, get_patterns_from_modisco_results
 
 # Load info from config file of modisco run
 
-assert len(sys.argv) == 3, len(sys.argv)  # expecting config path, list of motifs to keep (comma-separated indexes)
-config_path = sys.argv[1]
-patterns_to_keep =  [int(num) for num in sys.argv[2].split(",")]  # SPECIFY FOR EACH EXPERIMENT
+assert len(sys.argv) == 7, len(sys.argv)  # expecting config info, plus comma-separated list of motifs to keep
+cell_type, model_type, timestamp, modisco_task, score_task = sys.argv[1:6]
+patterns_to_keep =  [int(num) for num in sys.argv[-1].split(",")]  # SPECIFY FOR EACH EXPERIMENT
 
-config = load_json(config_path)
+config = MotifCallsFilesConfig(cell_type, model_type, timestamp, modisco_task, score_task)
 
-data_type = config["data_type"]
-cell_type = config["cell_type"]
-model_type = config["model_type"]
-timestamp = config["timestamp"]
-task = config["task"]
+in_window = config.in_window
+out_window = config.out_window
 
-in_window = config["in_window"]
-out_window = config["out_window"]
+genome_path = config.genome_path
+chrom_sizes = config.chrom_sizes
 
-genome_path = config["genome_path"]
-chrom_sizes = config["chrom_sizes"]
+peak_path = config.train_val_peak_path
 
-peak_path = config["train_val_peak_path"]
+slice_len = config.slice
 
-stranded = config["stranded_model"]
+scores_path = config.scores_path
 
-slice_len = config["slice"]
-
-scores_path = config["scores_path"]
-
-modisco_out_path = config["results_save_path"].replace("modisco_results.h", "old_fmt_modisco_results.h")
+modisco_out_path = config.modisco_results_path
 assert os.path.exists(modisco_out_path), modisco_out_path  # run conversion script before running this!
 print("Using old-format modisco file at " + modisco_out_path + ".")
+
+ensure_parent_dir_exists(config.results_save_path)
+
 
 # Load data, modisco results
 
@@ -198,7 +194,7 @@ match_table = match_table[[
 ]]
 
 
-match_table.to_csv(os.path.join(os.path.dirname(modisco_out_path), "motif_hits.bed"),
+match_table.to_csv(config.results_save_path,
                    sep="\t", header=False, index=False)
 
 print("Done calling motif hits.")

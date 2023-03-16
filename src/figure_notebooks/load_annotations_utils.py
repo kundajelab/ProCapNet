@@ -42,124 +42,142 @@ def load_coords_with_summits(peak_bed, in_window):
     return coords
 
 
-def load_annotations(annot_bed):
-    if annot_bed.endswith(".gz"):
-        with gzip.open(annot_bed) as f:
-            lines = [line.decode().split() for line in f]
-    else:
-        with open(annot_bed) as f:
-            lines = [line.split() for line in f]
-
-    coords = []
-    for line in lines:
-        chrom, start, end, annot = line[0], int(line[1]), int(line[2]), line[9]
-        coords.append((chrom, start, end, annot))
-    return coords
-
-
-def get_overlap_annots(list_a, list_b):
-    # This function is similar to bedtools intersect,
-    # but returns the bed file's labels, if windows overlap, for each
-    # window in list_a.
-    
-    # Assumes everything's on the same chromosome
-    # Assumes list_a is list of (start, stop), list_b is (start, stop, label)
-    
-    # output is list with len == len(list_a)
-    matches = []
-    
-    for a_item in list_a:
-        a_labels = []
-        a_start, a_end = a_item
-        b_index = 0
-        while b_index < len(list_b):
-            b_start, b_end, label = list_b[b_index]
-            
-            # b is after a
-            if b_start >= a_end:
-                break
-            # b is before a
-            if b_end <= a_start:
-                b_index += 1
-                continue
-            # only other case left: b overlaps a
-            a_labels.append(label)
-            b_index += 1
-
-        matches.append(a_labels)
-    assert len(matches) == len(list_a), matches
-    return matches
-
-
-def format_annot_list(annot_list):
-    # if input is ["A", "B,C", "D"], returns ["A", "B", "C", "D"]
-    fixed_list = []
-    for item in annot_list:
-        fixed_list.extend(item.split(","))
-    return fixed_list
-
-
-def get_annotations_for_peaks(coords, annotation_file, in_window, out_window):
-    annots = load_annotations(annotation_file)
-
-    # get set of chromosomes included in peak set
-    chroms = sorted(list(set(coord[0] for coord in coords)))
-
-    # make dict of chromosome --> sorted list of annotated regions + labels
-    annots_by_chrom = {chrom : sorted([a[1:] for a in annots if a[0] == chrom]) for chrom in chroms}
-    
-    # adjust the starts and ends of peak coordinates so they only cover +/- 500 bp
-    # (otherwise we'd probably get a lot of FP annotation overlaps)
-    adjust_by = (in_window - out_window) // 2
-    coords_adjust = [(c[0], c[1] + adjust_by, c[2] - adjust_by) for c in coords]
-    
-    # get list of annotations overlapping peak, for each peak (takes a few min)
-    overlap_annots_raw = [get_overlap_annots((coord[1:],), annots_by_chrom[coord[0]])[0] for coord in coords_adjust]
-    
-    # process raw string annotations into list of unique hits
-    overlap_annots = [sorted(list(set(format_annot_list(annot_list)))) for annot_list in overlap_annots_raw]
-    
-    # get set of unique annotation labels
-    all_annot_labels = set([annot for annot_list in overlap_annots for annot in annot_list])
-    
-    # make dict of annotation label --> list of len(num_peaks), where each element is True if overlap
-    overlap_annots_bools = {annot_label : np.array([annot_label in annot_list for annot_list in overlap_annots]) for annot_label in all_annot_labels}
-    return overlap_annots_bools
-
-
-def load_annotations_no_label(bed_filepath):
+def load_annotations(bed_filepath, label=True, label_col=9):
     if bed_filepath.endswith(".gz"):
         with gzip.open(bed_filepath) as f:
             lines = [line.decode().split() for line in f]
     else:
-        with open(hk_bed) as f:
+        with open(bed_filepath) as f:
             lines = [line.split() for line in f]
 
     coords = []
     for line in lines:
-        chrom, start, end = line[0], int(line[1]), int(line[2])
-        coords.append((chrom, start, end))
+        if label:
+            chrom, start, end, label = line[0], int(line[1]), int(line[2]), line[label_col]
+            coords.append((chrom, start, end, label))
+        else:
+            chrom, start, end = line[0], int(line[1]), int(line[2])
+            coords.append((chrom, start, end))
     return coords
 
 
-def get_overlap_hks(coord_a, list_b):
+def get_labels_of_what_a_overlaps_in_b(coord_a, list_b):
+    # This function is similar to bedtools intersect,
+    # but returns the bed file's labels, for any windows in b
+    # that overlap with region a.
+    
+    # Assumes coord_a is (start, stop)
+    # Assumes list_b is list of format (chrom, start, stop, label)
+    assert check_list_is_sorted(list_b), list_b
+    
+    # check that list_b is regions with all the same chromosome
+    assert len(set([coord[0] for coord in list_b])) == 1, set([coord[0] for coord in list_b])
+    
+    # if the chromosomes don't match, definitely nothing overlaps
+    if set([coord[0] for coord in list_b]) != set([coord_a[0]]):
+        return []
+    
+    overlap_labels = []
+    a_start, a_end = coord_a[1:3]
+    assert isinstance(a_start, int) and isinstance(a_end, int)
+    b_index = 0
+    while b_index < len(list_b):
+        b_start, b_end, label = list_b[b_index][1:4]
+        assert isinstance(b_start, int) and isinstance(b_end, int)
+        
+        # b is after a (since b is sorted, there will be no overlap)
+        if b_start >= a_end:
+            break
+        # b is before a (since list_b is sorted, continue to next element)
+        if b_end <= a_start:
+            b_index += 1
+            continue
+        # only other case left: b overlaps a
+        overlap_labels.append(label)
+        b_index += 1
+
+    return overlap_labels
+
+
+def format_label_list(label_list):
+    # if input is ["B,C", "A", "D", "A,B"], returns ["A", "B", "C", "D"]
+    fixed_list = []
+    for item in label_list:
+        fixed_list.extend(item.split(","))
+    return sorted(list(set(fixed_list)))
+
+
+def find_peak_overlap_labels(coords, bed_file_with_labels, in_window=2114, out_window=1000):
+    annots = load_annotations(bed_file_with_labels, label=True)
+
+    # get set of chromosomes included in peak set
+    chroms = sorted(list(set(coord[0] for coord in coords)))
+
+    # make dict of chromosome --> sorted list of regions + labels
+    # (later code will expect sorted input)
+    annots_by_chrom = {chrom : sorted([a for a in annots if a[0] == chrom]) for chrom in chroms}
+    
+    # adjust the starts and ends of peak coordinates so they only cover +/- 500 bp
+    adjust_by = (in_window - out_window) // 2
+    
+    overlaps = []
+    for coord in coords:
+        chrom, start, end = coord[:3]
+        coord_adjust = (chrom, start + adjust_by, end - adjust_by)
+    
+        # get list of labels for regions overlapping peak
+        overlap_annots_raw = get_labels_of_what_a_overlaps_in_b(coord_adjust, annots_by_chrom[chrom])
+    
+        # process raw strings into list of unique hits
+        overlap_annots = format_label_list(overlap_annots_raw)
+        overlaps.append(overlap_annots)
+    
+    # get set of all unique annotation labels that ever overlapped
+    all_labels = set([label for label_list in overlaps for label in label_list])
+    
+    # make dict of label --> list of len(num_peaks),
+    # where element i is True if peak i overlapped with that label
+    overlaps_dict = dict()
+    for label in all_labels:
+        overlap_bools = [label in overlap_label_list for overlap_label_list in overlaps]
+        overlaps_dict[label] = np.array(overlap_bools)
+
+    return overlaps_dict
+
+
+def check_list_is_sorted(a_list):
+    list_len = len(a_list)
+    for i in range(list_len - 1):
+        if not a_list[i] <= a_list[i+1]:
+            return False
+    return True
+
+def does_a_overlap_anything_in_b(coord_a, list_b):
     # This function is similar to bedtools intersect,
     # but returns True/False based on if any windows overlap
     # with coord_a.
     
-    # Assumes everything's on the same chromosome
-    # Assumes list_b is list of format (start, stop)
+    # Assumes list_b is list of format (chrom, start, stop)
+    assert check_list_is_sorted(list_b), list_b
     
-    a_start, a_end = coord_a[:2]
+    # check that list_b is regions with all the same chromosome
+    assert len(set([coord[0] for coord in list_b])) <= 1, set([coord[0] for coord in list_b])
+    
+    # if the chromosomes don't match, definitely no overlap
+    if set([coord[0] for coord in list_b]) != set([coord_a[0]]):
+        return False
+    
+    a_start, a_end = coord_a[1:3]
+    assert isinstance(a_start, int) and isinstance(a_end, int)
     b_index = 0
-    a_found_in_b = False
     while b_index < len(list_b):
-        b_start, b_end = list_b[b_index][:2]
+        b_start, b_end = list_b[b_index][1:3]
+        assert isinstance(b_start, int) and isinstance(b_end, int)
 
         # b is after a (since b is sorted, there will be no overlap)
         if b_start >= a_end:
             return False
-        # b is before a (since list_b is sorted, look at next element)
+        # b is before a (since list_b is sorted, continue to next element)
         elif b_end <= a_start:
             b_index += 1
         else:
@@ -170,20 +188,24 @@ def get_overlap_hks(coord_a, list_b):
     return False
 
 
-def get_annotations_for_hk_genes(coords, hk_bed, in_window=2114, out_window=1000):
-    annots = load_annotations_no_label(hk_bed)
+def find_peak_overlap(coords, bed_filepath, in_window=2114, out_window=1000):
+    annots = load_annotations(bed_filepath, label=False)
 
     # get set of chromosomes included in peak set
     chroms = sorted(list(set(coord[0] for coord in coords)))
 
     # make dict of chromosome --> sorted list of annotation regions
-    annots_by_chrom = {chrom : sorted([a[1:] for a in annots if a[0] == chrom]) for chrom in chroms}
-    
+    annots_by_chrom = {chrom : sorted([a for a in annots if a[0] == chrom]) for chrom in chroms}
+
     # adjust the starts and ends of peak coordinates so they only cover +/- 500 bp
     # (otherwise we'd probably get a lot of FP annotation overlaps)
     adjust_by = (in_window - out_window) // 2
-    coords_adjust = [(c[0], c[1] + adjust_by, c[2] - adjust_by) for c in coords]
     
-    # get bool for peak overlap, for each peak
-    overlap_annots = np.array([get_overlap_hks(coord[1:], annots_by_chrom[coord[0]]) for coord in coords_adjust])
-    return overlap_annots
+    # for each peak, get boolean for whether or not it overlaps with anything
+    overlaps = []
+    for coord in coords:
+        chrom, start, end = coord[:3]
+        coord_adjust = (chrom, start + adjust_by, end - adjust_by)
+        overlap = does_a_overlap_anything_in_b(coord_adjust, annots_by_chrom[chrom])
+        overlaps.append(overlap)
+    return np.array(overlaps)
