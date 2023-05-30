@@ -1,71 +1,52 @@
-from utils import get_proj_dir
 import os
 from datetime import datetime
 import json
 import shutil
 
+# this file exists to consolidate all hardcoded filepaths into one place
+
 
 # what model types are implemented (this must track with options allowed in train.py)
-MODEL_TYPES = ["strand_merged_umap", "stranded_umap", "strand_merged", "stranded",
-               "halfstranded_prof_merged", "halfstranded_counts_merged", "logprof_strand_merged"]
-
-
-class FilesConfig():
-    def __init__(self, cell_type, model_type, data_type = "procap"):
+MODEL_TYPES = ["strand_merged_umap", "stranded_umap", "strand_merged", "stranded"]
+    
+    
+    
+    
+class FoldFilesConfig():
+    def __init__(self, cell_type, model_type, fold, timestamp = None, data_type = "procap"):
+        
+        ## Parse inputs, figure out root directory
         
         assert model_type in MODEL_TYPES, model_type
         
         self.cell_type = cell_type
         self.model_type = model_type
+        self.fold = fold
         self.data_type = data_type
         
         self.stranded_model = "stranded" in self.model_type
         self.umap = "umap" in self.model_type
         
-        self.proj_dir = get_proj_dir()
+        self.proj_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))) + "/"
+        
+        # timestamp should be None when training a new model, otherwise should use existing
+        # serves as unique identifier for a model and all downstream analysis
+        if timestamp is None:
+            self.timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        else:
+            self.timestamp = timestamp
+        print("Timestamp: " + self.timestamp)
+        
+        
+        ## Store filepaths to everything
         
         # Genome files and annotations
         
         self.genome_path = self.proj_dir + "genomes/hg38.withrDNA.fasta"
         self.chrom_sizes = self.proj_dir + "genomes/hg38.withrDNA.chrom.sizes"
         
-        assert os.path.exists(self.genome_path), self.genome_path
-        assert os.path.exists(self.chrom_sizes), self.chrom_sizes
-
-        
-    def copy_input_files(self):
-        if os.path.exists(self.inputs_dir):
-            shutil.rmtree(self.inputs_dir)
-            
-        os.makedirs(self.inputs_dir, exist_ok=True)
-        
-        for original_filepath in self.input_files_to_copy:
-            filename = os.path.basename(original_filepath)
-            dest_filepath = os.path.join(self.inputs_dir, filename)
-            shutil.copy2(original_filepath, dest_filepath)
-
-
-    def save_config(self):
-        if os.path.exists(self.config_path):
-            os.remove(self.config_path)
-            
-        os.makedirs(self.inputs_dir, exist_ok=True)
-        
-        with open(self.config_path, "w") as json_file:
-            json.dump(self.__dict__, json_file)
-
-
-    def load_model_params(self, model_params_path):
-        with open(model_params_path) as f:
-            model_params = json.load(f)
-        return model_params["in_window"], model_params["out_window"]
-
-    
-
-class TrainFilesConfig(FilesConfig):
-    def __init__(self, cell_type, model_type, timestamp = None, data_type = "procap"):
-        
-        super().__init__(cell_type, model_type, data_type)
+        for filepath in [self.genome_path, self.chrom_sizes]:
+            assert os.path.exists(filepath), filepath
         
         if self.umap:
             self.mask_bw_path = self.proj_dir + "/annotations/hg38.k36.multiread.umap.bigWig"
@@ -73,336 +54,105 @@ class TrainFilesConfig(FilesConfig):
         else:
             self.mask_bw_path = None
             
+        
         # Data files (peaks, bigWigs)
         
         data_dir = self.proj_dir + "/".join(("data", self.data_type, "processed", self.cell_type)) + "/"
-        self.train_peak_path = data_dir + "peaks_uni_and_bi_train.bed.gz"
-        self.val_peak_path = data_dir + "peaks_uni_and_bi_val.bed.gz"
+        
+        self.all_peak_path = data_dir + "peaks.bed.gz"
+        self.train_peak_path = data_dir + "peaks_fold" + fold + "_train.bed.gz"
+        self.val_peak_path = data_dir + "peaks_fold" + fold + "_val.bed.gz"
+        self.test_peak_path = data_dir + "peaks_fold" + fold + "_test.bed.gz"
+        self.train_val_peak_path = data_dir + "peaks_fold" + fold + "_train_and_val.bed.gz"
+        
+        self.dnase_train_path = data_dir + "dnase_peaks_no_procap_overlap_fold" + fold + "_train.bed.gz"
+        
         self.plus_bw_path = data_dir + "5prime.pos.bigWig"
         self.minus_bw_path = data_dir + "5prime.neg.bigWig"
-        
-        assert os.path.exists(self.train_peak_path), self.train_peak_path
-        assert os.path.exists(self.val_peak_path), self.val_peak_path
-        assert os.path.exists(self.plus_bw_path), self.plus_bw_path
-        assert os.path.exists(self.minus_bw_path), self.minus_bw_path
-        
-        # Filepaths for locations to save model and various log files
 
-        save_dir = self.proj_dir + "/".join(("models", self.data_type, self.cell_type, self.model_type)) + "/"
-
-        if timestamp is None:
-            self.timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        else:
-            self.timestamp = timestamp
-        print("Timestamp: " + self.timestamp)
+        for filepath in [self.train_peak_path,
+                         self.val_peak_path,
+                         self.test_peak_path,
+                         self.train_val_peak_path,
+                         self.plus_bw_path,
+                         self.minus_bw_path]:
+            
+            assert os.path.exists(filepath), filepath
+            
         
-        # Filepaths for saving inputs
+        # Model save files
         
-        self.inputs_dir = save_dir + self.timestamp + "_in/"
+        self.model_dir = self.proj_dir + "/".join(("models", self.data_type, self.cell_type, self.model_type)) + "/"
         
-        self.config_path = self.inputs_dir + "config.json"
-        self.params_path = self.inputs_dir + "params.json"
-        self.arch_path = self.inputs_dir + "model_arch.txt"
+        self.model_save_path = self.model_dir + self.timestamp + ".model"
         
-        self.input_files_to_copy = [self.chrom_sizes,
-                                    self.train_peak_path,
-                                    self.val_peak_path,
-                                    self.plus_bw_path,
-                                    self.minus_bw_path]
+        self.params_path = self.model_dir + self.timestamp + "_params.json"
+        self.arch_path = self.model_dir + self.timestamp + "_model_arch.txt"
         
-        if self.umap:
-            self.input_files_to_copy += [self.mask_bw_path]
+        self.configs_dir = self.proj_dir + "/".join(("configs", self.data_type, self.cell_type, self.model_type)) + "/"
         
-        # Filepaths for saving outputs
-        
-        self.model_save_path = save_dir + self.timestamp + ".model"
-        
-
-class TrainWithCpGMatchedNegsFilesConfig(TrainFilesConfig):
-    def __init__(self, cell_type, model_type, timestamp = None, data_type = "procap"):
-        
-        super().__init__(cell_type, model_type, timestamp = timestamp, data_type = data_type)
-
-        data_dir = self.proj_dir + "/".join(("data", self.data_type, "processed", self.cell_type)) + "/"
-        self.train_peak_path = data_dir + "peaks_uni_and_bi_train_and_val_cpg_matched_train_peaks_and_matched.bed.gz"
+        self.config_path = self.configs_dir + self.timestamp + ".json"
 
         
-class TrainWithUnionPeaksFilesConfig(TrainFilesConfig):
-    def __init__(self, cell_type, model_type, timestamp = None, data_type = "procap"):
-        
-        super().__init__(cell_type, model_type, timestamp = timestamp, data_type = data_type)
+        # Model evaluation files
 
-        # not cell-type-specific
-        data_dir = self.proj_dir + "/".join(("data", self.data_type, "processed")) + "/"
-        self.train_peak_path = data_dir + "union_train_peaks_across_cell_types.bed.gz"
+        val_dir = self.proj_dir + "/".join(("model_out", self.data_type, self.cell_type, self.model_type, self.timestamp)) + "/"
 
-
-class TrainWithDNasePeaksFilesConfig(TrainFilesConfig):
-    def __init__(self, cell_type, model_type, timestamp = None, data_type = "procap"):
+        self.pred_profiles_all_path = val_dir + "all_pred_profiles.npy"
+        self.pred_logcounts_all_path = val_dir + "all_pred_logcounts.npy"
+        self.pred_profiles_test_path = val_dir + "test_pred_profiles.npy"
+        self.pred_logcounts_test_path = val_dir + "test_pred_logcounts.npy"
         
-        super().__init__(cell_type, model_type, timestamp = timestamp, data_type = data_type)
-
-        # not cell-type-specific
-        data_dir = self.proj_dir + "/".join(("data", self.data_type, "processed", self.cell_type)) + "/"
-        # the order of this list and the order of the source_fracs need to be the same
-        self.train_peak_paths = [data_dir + "peaks_uni_and_bi_train.bed.gz",
-                                data_dir + "dnase_peaks_no_train_peaks_train.bed.gz"]
-        self.source_fracs = [0.5, 0.5]
+        self.metrics_all_path = val_dir + "all_metrics.txt"
+        self.metrics_test_path = val_dir + "test_metrics.txt"
         
-
-class TrainWithDNasePeaksUnbalancedFilesConfig(TrainWithDNasePeaksFilesConfig):
-    def __init__(self, cell_type, model_type, timestamp = None, data_type = "procap"):
+        self.log_all_path = val_dir + "all_run_log.txt"
+        self.log_test_path = val_dir + "test_run_log.txt"
         
-        super().__init__(cell_type, model_type, timestamp = timestamp, data_type = data_type)
-
-        self.source_fracs = [0.875, 0.125]
+        # DeepSHAP files
         
+        shap_dir = self.proj_dir + "/".join(("deepshap_out", self.data_type, self.cell_type, self.model_type, self.timestamp)) + "/"
         
-class ValFilesConfig(FilesConfig):
-    def __init__(self, cell_type, model_type, timestamp, data_type = "procap"):
+        self.profile_scores_path = shap_dir + "all_profile_deepshap.npy"
+        self.profile_onehot_scores_path = shap_dir + "all_profile_deepshap_onehot.npy"
         
-        super().__init__(cell_type, model_type, data_type)
+        self.counts_scores_path = shap_dir + "all_counts_deepshap.npy"
+        self.counts_onehot_scores_path = shap_dir + "all_counts_deepshap_onehot.npy"
         
-        self.timestamp = timestamp
-        print("Timestamp: " + self.timestamp)
-
-        # Data files (peaks, bigWigs)
-        
-        model_dir = self.proj_dir + "/".join(("models", self.data_type, self.cell_type, self.model_type)) + "/"
-        model_inputs_dir = model_dir + self.timestamp + "_in/"
-
-        self.val_peak_path = model_inputs_dir + "peaks_uni_and_bi_val.bed.gz"
-        self.plus_bw_path = model_inputs_dir + "5prime.pos.bigWig"
-        self.minus_bw_path = model_inputs_dir + "5prime.neg.bigWig"
-        
-        assert os.path.exists(self.val_peak_path), self.val_peak_path
-        assert os.path.exists(self.plus_bw_path), self.plus_bw_path
-        assert os.path.exists(self.minus_bw_path), self.minus_bw_path
-        
-        self.in_window, self.out_window = self.load_model_params(model_inputs_dir + "params.json")
-        
-        data_dir = self.proj_dir + "/".join(("data", self.data_type, "processed", self.cell_type)) + "/"
-        self.train_val_peak_path = data_dir + "peaks_uni_and_bi_train_and_val.bed.gz"
-        
-        assert os.path.exists(self.train_val_peak_path), self.train_val_peak_path
-        
-        # Saved model file
-        
-        self.model_save_path = model_dir + self.timestamp + ".model"
-        
-        assert os.path.exists(self.model_save_path), self.model_save_path
-        
-        # Directory to save everything into
-
-        save_dir = self.proj_dir + "/".join(("model_out", self.data_type, self.cell_type, self.model_type)) + "/"
-        
-        # Filepaths for saving input files
-        
-        self.inputs_dir = save_dir + self.timestamp + "_in/"
-        
-        self.config_path = save_dir + self.timestamp + "_in/config.json"
-
-        self.input_files_to_copy = [self.chrom_sizes,
-                                    self.train_val_peak_path,
-                                    self.val_peak_path,
-                                    self.plus_bw_path,
-                                    self.minus_bw_path,
-                                    self.model_save_path]
-        
-        # Filepaths for saving outputs and various log files
-
-        self.outputs_dir = save_dir + self.timestamp + "_out/"
-        
-        #TODO: .npz?
-        self.pred_profiles_train_val_path = self.outputs_dir + "train_and_val_pred_profiles.npy"
-        self.pred_logcounts_train_val_path = self.outputs_dir + "train_and_val_pred_logcounts.npy"
-        self.pred_profiles_val_path = self.outputs_dir + "val_pred_profiles.npy"
-        self.pred_logcounts_val_path = self.outputs_dir + "val_pred_logcounts.npy"
-        
-        self.metrics_train_val_path = self.outputs_dir + "train_and_val_metrics.txt"
-        self.metrics_val_path = self.outputs_dir + "val_metrics.txt"
-        
-        self.log_train_val_path = self.outputs_dir + "train_and_val_run_log.txt"
-        self.log_val_path = self.outputs_dir + "val_run_log.txt"
-    
-    
-    
-    
-class DeepshapFilesConfig(FilesConfig):
-    def __init__(self, cell_type, model_type, timestamp, data_type = "procap"):
-        
-        super().__init__(cell_type, model_type, data_type)
-        
-        self.timestamp = timestamp
-        print("Timestamp: " + self.timestamp)
-
-        # Data files (peaks, bigWigs)
-        
-        model_dir = self.proj_dir + "/".join(("models", self.data_type, self.cell_type, self.model_type)) + "/"
-        model_inputs_dir = model_dir + self.timestamp + "_in/"
-
-        self.plus_bw_path = model_inputs_dir + "5prime.pos.bigWig"
-        self.minus_bw_path = model_inputs_dir + "5prime.neg.bigWig"
-        
-        assert os.path.exists(self.plus_bw_path), self.plus_bw_path
-        assert os.path.exists(self.minus_bw_path), self.minus_bw_path
-        
-        self.in_window, self.out_window = self.load_model_params(model_inputs_dir + "params.json")
-        
-        data_dir = self.proj_dir + "/".join(("data", self.data_type, "processed", self.cell_type)) + "/"
-        self.train_val_peak_path = data_dir + "peaks_uni_and_bi_train_and_val.bed.gz"
-        
-        assert os.path.exists(self.train_val_peak_path), self.train_val_peak_path
-        
-        # Saved model file
-        
-        self.model_save_path = model_dir + self.timestamp + ".model"
-        
-        assert os.path.exists(self.model_save_path), self.model_save_path
-        
-        # Directory to save everything into
-
-        save_dir = self.proj_dir + "/".join(("deepshap_out", self.data_type, self.cell_type, self.model_type)) + "/"
-        
-        # Filepaths for saving input files
-        
-        self.inputs_dir = save_dir + self.timestamp + "_in/"
-        
-        self.config_path = save_dir + self.timestamp + "_in/config.json"
-
-        self.input_files_to_copy = [self.chrom_sizes,
-                                    self.train_val_peak_path,
-                                    self.model_save_path]
-        
-        # Filepaths for saving outputs and various log files
-
-        self.outputs_dir = save_dir + self.timestamp + "_out/"
-        
-        #TODO: .npz?
-        self.profile_scores_path = self.outputs_dir + "train_and_val_profile_deepshap.npy"
-        self.profile_onehot_scores_path = self.outputs_dir + "train_and_val_profile_deepshap_onehot.npy"
-        
-        self.counts_scores_path = self.outputs_dir + "train_and_val_counts_deepshap.npy"
-        self.counts_onehot_scores_path = self.outputs_dir + "train_and_val_counts_deepshap_onehot.npy"
-    
-    
-    
-class ModiscoFilesConfig(FilesConfig):
-    def __init__(self, cell_type, model_type, timestamp, task, data_type = "procap"):
-        
-        super().__init__(cell_type, model_type, data_type)
-        
-        self.timestamp = timestamp
-        print("Timestamp: " + self.timestamp)
-        
-        assert task in ["profile", "counts"], task
-        self.task = task
+        # Modisco files, params
         
         self.slice = 1000
+        
+        modisco_dir = self.proj_dir + "/".join(("modisco_out", self.data_type, self.cell_type, self.model_type, self.timestamp)) + "/"
+        
+        # NEW: use profile_scores_path or counts_scores_path instead of "scores_path"
+        # NEW: no more results_save_path, use these instead
+        self.modisco_profile_results_path = modisco_dir + "profile_modisco_results.hd5"
+        self.modisco_counts_results_path = modisco_dir + "counts_modisco_results.hd5"
+        
+        # Motif calling files
+        
+        # NEW: use profile_scores_path or counts_scores_path instead of "scores_path"
+        # NEW: no more results_save_path, use these instead
+        self.refmt_modisco_profile_results_path = modisco_dir + "old_fmt_profile_modisco_results.hd5"
+        self.refmt_modisco_counts_results_path = modisco_dir + "old_fmt_counts_modisco_results.hd5"
 
-        # Data files (peaks, hypothetical scores)
+        motifs_dir = self.proj_dir + "/".join(("motif_calls_out", self.data_type, self.cell_type, self.model_type, self.timestamp)) + "/"
         
-        model_dir = self.proj_dir + "/".join(("models", self.data_type, self.cell_type, self.model_type)) + "/"
-        model_inputs_dir = model_dir + self.timestamp + "_in/"
-        
-        self.in_window, self.out_window = self.load_model_params(model_inputs_dir + "params.json")
-        
-        deepshap_dir = self.proj_dir + "/".join(("deepshap_out", self.data_type, self.cell_type, self.model_type)) + "/"
-        deepshap_inputs_dir = deepshap_dir + self.timestamp + "_in/"
-        
-        self.train_val_peak_path = deepshap_inputs_dir + "peaks_uni_and_bi_train_and_val.bed.gz"
-        
-        assert os.path.exists(self.train_val_peak_path), self.train_val_peak_path
-        
-        deepshap_outputs_dir = deepshap_dir + self.timestamp + "_out/"
-        
-        if self.task == "profile":
-            self.scores_path = deepshap_outputs_dir + "train_and_val_profile_deepshap.npy"
-        else:
-            self.scores_path = deepshap_outputs_dir + "train_and_val_counts_deepshap.npy"
-        
-        # Directory to save everything into
+        self.profile_hits_path = motifs_dir + "profile_motif_hits.bed"
+        self.counts_hits_path = motifs_dir + "counts_motif_hits.bed"
 
-        save_dir = self.proj_dir + "/".join(("modisco_out", self.data_type, self.cell_type, self.model_type)) + "/"
+    def save_config(self):
+        if os.path.exists(self.config_path):
+            os.remove(self.config_path)
+            
+        os.makedirs(self.configs_dir, exist_ok=True)
         
-        # Filepaths for saving input files
-        
-        self.inputs_dir = save_dir + self.timestamp + "_" + task + "_in/"
-        
-        self.config_path = save_dir + self.timestamp + "_" + task + "_in/config.json"
+        with open(self.config_path, "w") as json_file:
+            json.dump(self.__dict__, json_file)
 
-        self.input_files_to_copy = [self.chrom_sizes,
-                                    self.train_val_peak_path,
-                                    self.scores_path]
-        
-        # Filepaths for saving outputs and various log files
 
-        self.outputs_dir = save_dir + self.timestamp + "_" + task + "_out/"
-        
-        self.results_save_path = self.outputs_dir + "modisco_results.hd5"
-        
-
-class MotifCallsFilesConfig(FilesConfig):
-    def __init__(self, cell_type, model_type, timestamp, modisco_task, score_task, data_type = "procap"):
-        
-        super().__init__(cell_type, model_type, data_type)
-        
-        self.timestamp = timestamp
-        print("Timestamp: " + self.timestamp)
-        
-        # modisco_task = what task to get motifs from
-        # score_task = what task to use score tracks from in hit calling
-        assert modisco_task in ["profile", "counts"], modisco_task
-        assert score_task in ["profile", "counts"], score_task
-        self.modisco_task = modisco_task
-        self.score_task = score_task
-        
-        self.slice = 1000
-
-        # Data files (peaks, hypothetical scores)
-        
-        model_dir = self.proj_dir + "/".join(("models", self.data_type, self.cell_type, self.model_type)) + "/"
-        model_inputs_dir = model_dir + self.timestamp + "_in/"
-        
-        self.in_window, self.out_window = self.load_model_params(model_inputs_dir + "params.json")
-        
-        deepshap_dir = self.proj_dir + "/".join(("deepshap_out", self.data_type, self.cell_type, self.model_type)) + "/"
-        deepshap_inputs_dir = deepshap_dir + self.timestamp + "_in/"
-        
-        self.train_val_peak_path = deepshap_inputs_dir + "peaks_uni_and_bi_train_and_val.bed.gz"
-        
-        assert os.path.exists(self.train_val_peak_path), self.train_val_peak_path
-        
-        deepshap_outputs_dir = deepshap_dir + self.timestamp + "_out/"
-        
-        if self.score_task == "profile":
-            self.scores_path = deepshap_outputs_dir + "train_and_val_profile_deepshap.npy"
-        else:
-            self.scores_path = deepshap_outputs_dir + "train_and_val_counts_deepshap.npy"
-        
-        modisco_dir = self.proj_dir + "/".join(("modisco_out", self.data_type, self.cell_type, self.model_type)) + "/"
-        modisco_outputs_dir = modisco_dir + self.timestamp + "_" + modisco_task + "_out/"
-        
-        self.modisco_results_path = modisco_outputs_dir + "old_fmt_modisco_results.hd5"
-        
-        # Directory to save everything into
-
-        save_dir = self.proj_dir + "/".join(("motif_calls_out", self.data_type, self.cell_type, self.model_type)) + "/"
-        
-        # Filepaths for saving input files
-        
-        self.inputs_dir = save_dir + self.timestamp + "_" + score_task + "_in/"
-        
-        self.config_path = save_dir + self.timestamp + "_" + score_task + "_in/config.json"
-
-        self.input_files_to_copy = [self.chrom_sizes,
-                                    self.train_val_peak_path,
-                                    self.scores_path,
-                                    self.modisco_results_path]
-        
-        # Filepaths for saving outputs and various log files
-
-        self.outputs_dir = save_dir + self.timestamp + "_" + score_task + "_out/"
-        
-        self.results_save_path = self.outputs_dir + "motif_hits.bed"
-    
+    def load_model_params(self):
+        with open(self.params_path) as f:
+            model_params = json.load(f)
+        return model_params["in_window"], model_params["out_window"] 

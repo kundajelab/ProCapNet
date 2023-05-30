@@ -8,7 +8,10 @@ import torch
 
 from losses import MNLLLoss, log1pMSELoss
 from performance_metrics import pearson_corr, multinomial_log_probs, compute_performance_metrics
-from utils import ensure_parent_dir_exists
+
+import sys
+sys.path.append("../utils")
+from misc import ensure_parent_dir_exists
 
 torch.backends.cudnn.benchmark = True
 

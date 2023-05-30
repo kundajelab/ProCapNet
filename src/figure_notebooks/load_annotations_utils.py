@@ -209,3 +209,60 @@ def find_peak_overlap(coords, bed_filepath, in_window=2114, out_window=1000):
         overlap = does_a_overlap_anything_in_b(coord_adjust, annots_by_chrom[chrom])
         overlaps.append(overlap)
     return np.array(overlaps)
+
+
+def clean_coord_summits(coord):
+    assert len(coord) >= 5, coord
+    chrom, start, end, summit_pos, summit_neg = coord[:5]
+    if summit_pos is None:
+        summit_pos = summit_neg
+    if summit_neg is None:
+        summit_neg = summit_pos
+    return (chrom, start, end, summit_pos, summit_neg)
+
+
+def get_gene_region_overlap(coords, gene_regions_files, in_window=2114, out_window=1000):
+    overlaps = dict()
+    
+    for region_name, region_filepath in gene_regions_files.items():
+        regions = load_annotations(region_filepath, label=False)
+
+        # get set of chromosomes included in peak set
+        chroms = sorted(list(set(coord[0] for coord in coords)))
+
+        # make dict of chromosome --> sorted list of regions
+        regions_by_chrom = {chrom : sorted([c for c in regions if c[0] == chrom]) for chrom in chroms}
+        
+        overlap_bools = []
+        for coord in coords:
+            chrom, start, end, summit_pos, summit_neg = clean_coord_summits(coord)
+            # adjust the starts and ends of peak coordinates so they only cover summits +/- 50 bp
+            # (will probably get a lot of FP overlaps)
+            coord_adjust = (chrom, min(summit_pos, summit_neg) - 50, max(summit_pos, summit_neg) + 50)
+
+            overlap_bool = does_a_overlap_anything_in_b(coord_adjust, regions_by_chrom[chrom])
+            overlap_bools.append(overlap_bool)
+        
+        overlaps[region_name] = np.array(overlap_bools)
+        
+    return overlaps
+
+
+def get_dist_to_TSS(coords, TSSs_bed, in_window=2114, out_window=1000):
+    TSSs = load_annotations(TSSs_bed, label=False)
+
+    # get set of chromosomes included in peak set
+    chroms = sorted(list(set(coord[0] for coord in coords)))
+
+    # make dict of chromosome --> sorted list of annotation regions
+    TSSs_by_chrom = {chrom : np.array(sorted([t[1] for t in TSSs if t[0] == chrom])) for chrom in chroms}
+
+    TSS_dists = []
+    for coord in coords:
+        chrom, _, _, summit_pos, summit_neg = clean_coord_summits(coord)
+        summit_midpoint = (summit_pos + summit_neg) // 2
+
+        dist_to_nearest_TSS = np.min(np.abs(TSSs_by_chrom[chrom] - summit_midpoint))
+        TSS_dists.append(dist_to_nearest_TSS)
+
+    return np.array(TSS_dists)

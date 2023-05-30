@@ -43,6 +43,20 @@ def trim_two_motifs_by_thresh(motif1, motif2, trim_threshold=0.3, pad=2):
     return motif1[start:end], motif2[start:end]
 
 
+# frankensteined together from how the hit caller code trims
+def trim_motif_by_ic(ppm, seq, target_len=25):
+    per_pos_ic = compute_per_position_ic(seq)
+    
+    best_i = -1
+    best_sum = 0
+    for i in range(ppm.shape[0] - target_len + 1):
+        new_sum = np.sum(per_pos_ic[i : i + target_len])
+        if new_sum > best_sum:
+            best_sum = new_sum
+            best_i = i
+
+    return ppm[best_i:best_i + target_len]
+
 
 def plot_motif_on_ax(array, ax):
     assert len(array.shape) == 2 and array.shape[-1] == 4, array.shape
@@ -58,5 +72,7 @@ def plot_motif_on_ax(array, ax):
     ax.set_ylim(min(df.sum(axis=1).min(), 0), df.sum(axis=1).max())
     ax.set_xticks([])
     ax.set_yticks([])
+    
+    return crp_logo
     
     

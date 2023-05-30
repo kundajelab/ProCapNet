@@ -1,68 +1,62 @@
 import os
 import sys
 
-# expecting cell type, maybe gpu
-assert len(sys.argv) in [3,4], len(sys.argv)  
-cell_type, model_type = sys.argv[1:3]
-if len(sys.argv) == 4:
-    os.environ["CUDA_VISIBLE_DEVICES"] = sys.argv[3]
+# expecting cell type, model_type, fold #, maybe gpu
+
+assert len(sys.argv) in [4,5], len(sys.argv)  
+cell_type, model_type, fold = sys.argv[1:4]
+if len(sys.argv) == 5:
+    os.environ["CUDA_VISIBLE_DEVICES"] = sys.argv[4]
+data_type = "procap"
 
 
-from data_loading import load_data_loader, extract_peaks
+from data_loading_multi_source import load_data_loader
+from data_loading import extract_peaks
+
+sys.path.append("../utils")
+from misc import ensure_parent_dir_exists
+
 from torch.optim import Adam
 
 
 # Load Hyperparameters, Filepaths from Configs
 
-from file_configs import TrainFilesConfig as FilesConfig
-config = FilesConfig(cell_type, model_type)
+from file_configs import FoldFilesConfig as FilesConfig
+config = FilesConfig(cell_type, model_type, fold, data_type = data_type)
 
 
 # Init Model and Params Object
 
 if config.model_type == "strand_merged_umap":
     from BPNet_strand_merged_umap import Model
-    from hyperparams import DefaultParams as Params
+    
 elif config.model_type == "stranded_umap":
     from BPNet_stranded_umap import Model
-    from hyperparams import DefaultParams as Params
 elif config.model_type == "strand_merged":
     from BPNet_strand_merged import Model
-    from hyperparams import DefaultParams as Params
 elif config.model_type == "stranded":
     from BPNet_stranded import Model
-    from hyperparams import DefaultParams as Params
-elif config.model_type == "EMD_strand_merged":
-    from BPNet_EMD_strand_merged import Model
-    from hyperparams import EMDParams as Params
-elif config.model_type == "EMD_and_multinomial_strand_merged":
-    from BPNet_EMD_and_multinomial_strand_merged import Model
-    from hyperparams import EMDParams as Params
 else:
-    raise NotImplementedError(config.model_type + "is not a valid model type.")
+    raise NotImplementedError(config.model_type + " is not a valid model type.")
 
+from hyperparams import DefaultParams as Params
 params = Params()
     
-if "EMD" in config.model_type:
-    model = Model(config.model_save_path,
-                  n_filters=params.n_filters,
-                  n_layers=params.n_layers,
-                  trimming=params.trimming,
-                  alpha=params.counts_weight,
-                  beta=params.emd_weight)
-else:
-    model = Model(config.model_save_path,
-                  n_filters=params.n_filters,
-                  n_layers=params.n_layers,
-                  trimming=params.trimming,
-                  alpha=params.counts_weight)
+model = Model(config.model_save_path,
+              n_filters=params.n_filters,
+              n_layers=params.n_layers,
+              trimming=params.trimming,
+              alpha=params.counts_weight)
 
 
 # Save Filepaths + Variables + Model Arch to Files
 
-config.copy_input_files()
 config.save_config()
+
+ensure_parent_dir_exists(config.params_path)
 params.save_config(config.params_path)
+
+ensure_parent_dir_exists(config.arch_path)
 model.save_model_arch_to_txt(config.arch_path)
 
 
@@ -72,7 +66,8 @@ train_data_loader = load_data_loader(config.genome_path,
                                      config.chrom_sizes,
                                      config.plus_bw_path,
                                      config.minus_bw_path,
-                                     config.train_peak_path,
+                                     [config.train_peak_path, config.dnase_train_path],
+                                     params.source_fracs,
                                      config.mask_bw_path,
                                      params.in_window,
                                      params.out_window,

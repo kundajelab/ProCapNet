@@ -4,9 +4,6 @@ import subprocess
 from collections import defaultdict
 import pandas as pd
 
-import sys
-sys.path.append("../2_train_models")
-from utils import get_proj_dir
 from make_gene_region_annotations import load_gtf, load_bed_file, write_regions_to_bed_file
 from make_gene_region_annotations import run_bedtools_merge, make_promoter_regions 
 
@@ -52,19 +49,20 @@ def fix_gene_names(name_fix_csv, gene_names):
     
 
 def main():
-    proj_dir = get_proj_dir()
+    proj_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))) + "/"
+    
     gtf_filepath = proj_dir + "annotations/gencode.v41.annotation.gtf.gz"
     genome_filepath = proj_dir + "genomes/hg38.withrDNA.fasta"
     gtf_regions = load_gtf(gtf_filepath,
                            region_types_to_load = ["gene", "transcript"])
     assert len(gtf_regions) > 0, len(gtf_regions)
     
+    # I got this file from Jesse Engreitz (PI, Stanford)
     housekeeping_csv = proj_dir + "annotations/JEngreitz_housekeeping_genes.csv"
     hk_gene_names = load_housekeeping_gene_names(housekeeping_csv)
-    print(len(hk_gene_names))
     
     # I downloaded this from https://www.genenames.org/tools/multi-symbol-checker/
-    # after I ran this code once, and input every gene name that I hadn't found a match for
+    # after I ran this code once and then input every gene name that I hadn't found a match for
     name_fix_csv = proj_dir + "annotations/gene_name_fixes.csv"
     fixed_hk_gene_names = fix_gene_names(name_fix_csv, hk_gene_names)
     
@@ -75,8 +73,8 @@ def main():
     # filter to only HK transcripts by gene name
     hk_genes = filter_for_target_genes(gtf_regions["gene"], fixed_hk_gene_names)
     hk_transcripts = filter_for_target_genes(gtf_regions["transcript"], fixed_hk_gene_names)
-    print(len(hk_genes), len(hk_transcripts))
     
+    # uncomment this if you are trying to make your own gene_name_fixes.csv
     #found_hk_gene_names = set([tup[-1] for tup in hk_genes])
     #print(sorted(list(fixed_hk_gene_names - found_hk_gene_names)))
     
@@ -91,7 +89,7 @@ def main():
     
     os.remove(tmp_filepath)
 
-    print("Done.")
+    print("Done processing housekeeping annotations.")
     
     
 if __name__ == "__main__":

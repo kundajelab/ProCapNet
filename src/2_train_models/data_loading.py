@@ -7,7 +7,9 @@ import numpy as np
 import torch
 import os, sys
 from tqdm import tqdm
-from utils import load_chrom_names
+
+sys.path.append("../utils")
+from misc import load_chrom_names
 
 
 

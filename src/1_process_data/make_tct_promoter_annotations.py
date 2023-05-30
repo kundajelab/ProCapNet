@@ -6,7 +6,6 @@ from collections import defaultdict
 import sys
 sys.path.append("../2_train_models")
 from data_loading import extract_sequences
-from utils import get_proj_dir
 from make_gene_region_annotations import load_gtf, load_bed_file, write_regions_to_bed_file
 from make_gene_region_annotations import run_bedtools_merge, make_promoter_regions 
 
@@ -58,7 +57,8 @@ def TCT_motif_in_seq(seq):
     
 
 def main():
-    proj_dir = get_proj_dir()
+    proj_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))) + "/"
+    
     gtf_filepath = proj_dir + "annotations/gencode.v41.annotation.gtf.gz"
     genome_filepath = proj_dir + "genomes/hg38.withrDNA.fasta"
     gtf_regions = load_gtf(gtf_filepath,
@@ -93,7 +93,7 @@ def main():
     
     os.remove(tmp_a)
     os.remove(tmp_b)
-    print("Done.")
+    print("Done processing TCT promoter annotations.")
     
     
 if __name__ == "__main__":

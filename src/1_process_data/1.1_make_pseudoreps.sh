@@ -2,17 +2,9 @@
 
 set -e
 
-
-get_proj_root () {
-  # requires that file .root.txt is located in top level of project directory.
-  # if you don't want to do this, hard-code or input the project dir as an arg.
-  local DIR=$(pwd)
-  while [ ! -z "$DIR" ] && [ ! -f "$DIR/.root.txt" ]; do DIR="${DIR%\/*}"; done
-  if [ -z "$DIR" ]; then script=`basename "$0"` && echo "ERROR: could not determine project directory in script $script. Exiting." >&2 && exit 1; fi
-  echo "$DIR"
-}
-
-proj_root=`get_proj_root`
+script_dir=$( dirname -- "$( readlink -f -- "$0"; )"; )
+proj_root=$( dirname $( dirname $script_dir ))
+echo "Project directory: $proj_root"
 
 chrom_sizes="$proj_root/genomes/hg38.withrDNA.chrom.sizes"
 

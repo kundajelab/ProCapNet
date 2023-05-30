@@ -4,9 +4,8 @@ import subprocess
 from collections import defaultdict
 
 import sys
-sys.path.append("../2_train_models")
-from write_bigwigs import get_header_for_bigwig
-from utils import get_proj_dir
+sys.path.append("../utils")
+from misc import load_chrom_sizes
 
 
 def load_gtf(gtf_filepath, region_types_to_load = ["transcript", "gene", "exon", "UTR", "CDS"]):
@@ -38,8 +37,8 @@ def load_gtf(gtf_filepath, region_types_to_load = ["transcript", "gene", "exon",
     return regions
 
 
-def load_chrom_sizes(chrom_sizes_filepath, filter_out=["chrUn", "chrM", "chrEBV", "_"]):
-    chrom_sizes = get_header_for_bigwig(chrom_sizes_filepath)
+def load_chrom_sizes_filt(chrom_sizes_filepath, filter_out=["chrUn", "chrM", "chrEBV", "_"]):
+    chrom_sizes = load_chrom_sizes(chrom_sizes_filepath)
     
     filter_chrom_sizes = []
     for chrom, size in chrom_sizes:
@@ -127,7 +126,8 @@ def make_promoter_regions(transcript_regions, extend_upstream=300, extend_downst
     return promoters
 
 def main():
-    proj_dir = get_proj_dir()
+    proj_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))) + "/"
+    
     gtf_filepath = proj_dir + "annotations/gencode.v41.annotation.gtf.gz"
     chrom_sizes_filepath = proj_dir + "genomes/hg38.chrom.sizes"
 
@@ -147,7 +147,7 @@ def main():
     gtf_regions = load_gtf(gtf_filepath)
     
     write_regions_to_bed_file(gtf_regions["gene"], genes_bed)
-    write_regions_to_bed_file(load_chrom_sizes(chrom_sizes_filepath), tmp_a)
+    write_regions_to_bed_file(load_chrom_sizes_filt(chrom_sizes_filepath), tmp_a)
     run_bedtools_subtract(tmp_a, genes_bed, tmp_b)
     run_bedtools_merge(tmp_b, intergenic_bed)
     
@@ -171,6 +171,8 @@ def main():
     
     os.remove(tmp_a)
     os.remove(tmp_b)
+    
+    print("Done processing gene region annotations.")
     
     
 if __name__ == "__main__":

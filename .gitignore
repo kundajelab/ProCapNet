@@ -5,6 +5,7 @@ figures/
 genomes/
 model_out/
 models/
+configs/
 modisco_out/
 old_modisco_out/
 motif_calls_out/
@@ -15,3 +16,6 @@ __pycache__/
 .ipynb_checkpoints/
 */.ipynb_checkpoints/
 */*/.ipynb_checkpoints/
+*/logs/
+*/*log*
+*/*/*log*

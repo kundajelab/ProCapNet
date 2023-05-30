@@ -8,7 +8,7 @@ import numpy as np
 import pyBigWig
 from collections import defaultdict
 import gzip
-from utils import load_chrom_names
+from misc import load_chrom_names, load_chrom_sizes
 
 
 def make_track_values_dict(all_values, coords, chrom):
@@ -28,11 +28,7 @@ def make_track_values_dict(all_values, coords, chrom):
     return track_values
 
 
-def get_header_for_bigwig(chrom_sizes_filepath):
-    with open(chrom_sizes_filepath) as f:
-        chrom_sizes_lines = [line.strip().split('\t') for line in f]
-        chrom_sizes = [(line[0], int(line[1])) for line in chrom_sizes_lines]
-    return chrom_sizes
+
 
 
 def load_coords(peaks_file, window_len):
@@ -91,7 +87,7 @@ def write_tracks_to_bigwigs(values,
         bw = pyBigWig.open(bw_filename, 'w')
         # bigwigs need headers before they can be written to
         # the header is just the info you'd find in a chrom.sizes file
-        bw.addHeader(get_header_for_bigwig(chrom_sizes_filepath))
+        bw.addHeader(load_chrom_sizes(chrom_sizes_filepath))
         
         for chrom in chromosomes:
             # convert arrays of scores for each peak into dict of base position : score
@@ -145,7 +141,7 @@ def write_scores_to_bigwigs(scores,
     bw = pyBigWig.open(bw_filename, 'w')
     # bigwigs need headers before they can be written to
     # the header is just the info you'd find in a chrom.sizes file
-    bw.addHeader(get_header_for_bigwig(chrom_sizes_filepath))
+    bw.addHeader(load_chrom_sizes(chrom_sizes_filepath))
 
     for chrom in chromosomes:
         # convert arrays of scores for each peak into dict of base position : score
