@@ -8,14 +8,32 @@ import sys
 sys.path.append("../2_train_models")
 from data_loading import extract_peaks
 from performance_metrics import compute_performance_metrics
+
+sys.path.append("../utils")
 from write_bigwigs import write_tracks_to_bigwigs
-from utils import ensure_parent_dir_exists
+from misc import ensure_parent_dir_exists
 
 
-def run_val(sequence_path, chrom_sizes, plus_bw_path, minus_bw_path, peak_path,
-            model_path, pred_profiles_path, pred_logcounts_path,
-            metrics_save_path, log_save_path, in_window=2114, out_window=1000,
-            stranded=False, save=True):
+
+def model_predict_with_rc(model, onehot_seqs):
+    with torch.no_grad():
+        onehot_seqs = torch.tensor(onehot_seqs, dtype=torch.float32).cuda()
+        pred_profiles, pred_logcounts = model.predict(onehot_seqs)
+        rc_pred_profiles, rc_pred_logcounts = model.predict(torch.flip(onehot_seqs, [-1, -2]))
+    
+    rc_pred_profiles = rc_pred_profiles[:, ::-1, ::-1]
+    
+    # take the average prediction across the fwd and RC sequences
+    merged_pred_profiles = np.log(np.array([np.exp(pred_profiles), np.exp(rc_pred_profiles)]).mean(axis=0))
+    merged_pred_logcounts = np.array([pred_logcounts, rc_pred_logcounts]).mean(axis=0)
+    
+    return merged_pred_profiles, merged_pred_logcounts
+
+
+def run_eval(sequence_path, chrom_sizes, plus_bw_path, minus_bw_path, peak_path,
+             model_path, pred_profiles_path, pred_logcounts_path,
+             metrics_save_path, log_save_path, in_window=2114, out_window=1000,
+             stranded=False, save=True):
 
     to_print = "=== Running Model Eval ==="
     to_print += "\nBigwigs:\n   - " + plus_bw_path + "\n   - " + minus_bw_path
@@ -46,9 +64,7 @@ def run_val(sequence_path, chrom_sizes, plus_bw_path, minus_bw_path, peak_path,
         max_jitter=0, verbose=True)
     
     # make predictions
-    with torch.no_grad():
-        onehot_seqs = torch.tensor(onehot_seqs, dtype=torch.float32).cuda()
-        pred_profiles, pred_logcounts = model.predict(onehot_seqs)
+    pred_profiles, pred_logcounts = model_predict_with_rc(model, onehot_seqs)
     
     # save predictions to files
     if save:
@@ -77,7 +93,7 @@ def run_val(sequence_path, chrom_sizes, plus_bw_path, minus_bw_path, peak_path,
 
     # compute metrics
     metrics = compute_performance_metrics(true_profiles, pred_profiles, 
-        true_counts, pred_logcounts)
+        true_counts, pred_logcounts, smooth_true_profs=False, smooth_pred_profs=False)
 
     # save metrics and log results
     df_dict = {metric : list(metrics[metric].squeeze()) for metric in ["nll", "jsd", "profile_pearson"]}

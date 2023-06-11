@@ -16,6 +16,8 @@ from IPython.display import display
 import tqdm
 
 
+# I moved load_coords to common-functions.py
+
 def import_motif_hits(motif_hits_path):
     """
     Imports the TF-MoDISco hits as a single Pandas DataFrame.
@@ -238,25 +240,6 @@ def filter_peak_hits_by_fdr(hit_table, score_column="fann_perclasssum_perc", fdr
     if plot:
         return hit_table.iloc[pvals <= pval_thresh].reset_index(drop=True), (score_fig, fdr_fig)
     return hit_table.iloc[pvals <= pval_thresh].reset_index(drop=True)
-
-
-
-def load_coords(peak_bed, in_window):
-    if peak_bed.endswith(".gz"):
-        with gzip.open(peak_bed) as f:
-            lines = [line.decode().split() for line in f]
-    else:
-        with open(peak_bed) as f:
-            lines = [line.split() for line in f]
-
-    coords = []
-    for line in lines:
-        chrom, peak_start, peak_end = line[0], int(line[1]), int(line[2])
-        mid = (peak_start + peak_end) // 2
-        window_start = mid - in_window // 2
-        window_end = mid + in_window // 2
-        coords.append((chrom, window_start, window_end))
-    return coords
 
 
 def make_peak_table(peak_path, in_window):

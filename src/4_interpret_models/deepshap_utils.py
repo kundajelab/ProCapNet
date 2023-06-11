@@ -8,7 +8,8 @@ sys.path.append("../2_train_models")
 from data_loading import extract_peaks
 from dinuc_shuffle import dinuc_shuffle
 from write_bigwigs import write_scores_to_bigwigs
-from utils import ensure_parent_dir_exists
+sys.path.append("../utils")
+from misc import ensure_parent_dir_exists
 
 
 class ProfileModelWrapper(torch.nn.Module):
@@ -78,13 +79,20 @@ class StrandedCountsModelWrapper(torch.nn.Module):
     
     
     
-def get_attributions(sequences, prof_explainer, count_explainer, num_shufs = 25):
+def get_attributions(sequences, model, is_stranded, num_shufs = 25):
     assert len(sequences.shape) == 3 and sequences.shape[1] == 4, sequences.shape
     prof_attrs = []
     count_attrs = []
 
     with torch.no_grad():
         for i in trange(len(sequences)):
+            if is_stranded:
+                prof_explainer = DeepLiftShap(StrandedProfileModelWrapper(model))
+                count_explainer = DeepLiftShap(StrandedCountsModelWrapper(model))
+            else:
+                prof_explainer = DeepLiftShap(ProfileModelWrapper(model))
+                count_explainer = DeepLiftShap(CountsModelWrapper(model))
+            
             # use a batch of 1 so that reference is generated for each seq 
             seq = torch.tensor(sequences[i : i + 1]).float()
 
@@ -92,13 +100,26 @@ def get_attributions(sequences, prof_explainer, count_explainer, num_shufs = 25)
             ref_seqs = dinuc_shuffle(seq[0], num_shufs).float().cuda()
 
             seq = seq.cuda()
-            # calculate attributions according to profile task
-            prof_attrs_batch = prof_explainer.attribute(seq, ref_seqs)
-            prof_attrs.append(prof_attrs_batch.cpu().numpy())
+            # calculate attributions according to profile task (fwd and rev strands)
+            prof_attrs_fwd = prof_explainer.attribute(seq, ref_seqs).cpu()
+            prof_attrs_rev = prof_explainer.attribute(torch.flip(seq, [1,2]),
+                                                      torch.flip(ref_seqs, [1,2])).cpu()
 
-            # calculate attributions according to counts task
-            count_attrs_batch = count_explainer.attribute(seq, ref_seqs)
-            count_attrs.append(count_attrs_batch.cpu().numpy())
+            prof_attrs_rev = torch.flip(prof_attrs_rev, [1,2])
+            
+            prof_attrs_batch = np.array([prof_attrs_fwd.numpy(), prof_attrs_rev.numpy()])
+            prof_attrs.append(prof_attrs_batch.mean(axis=0))
+
+            # calculate attributions according to counts task (fwd and rev strands)
+            
+            count_attrs_fwd = count_explainer.attribute(seq, ref_seqs).cpu()
+            count_attrs_rev = count_explainer.attribute(torch.flip(seq, [1,2]),
+                                                        torch.flip(ref_seqs, [1,2])).cpu()
+            
+            count_attrs_rev = torch.flip(count_attrs_rev, [1,2])
+            
+            count_attrs_batch = np.array([count_attrs_fwd.numpy(), count_attrs_rev.numpy()])
+            count_attrs.append(count_attrs_batch.mean(axis=0))
 
     prof_attrs = np.concatenate(prof_attrs)
     count_attrs = np.concatenate(count_attrs)
@@ -160,17 +181,9 @@ def run_deepshap(genome_path, chrom_sizes, plus_bw_path, minus_bw_path,
     model = torch.load(model_path)
     model.eval()
     model = model.cuda()
+    
 
-    if stranded:
-        prof_shap_explainer = DeepLiftShap(StrandedProfileModelWrapper(model))
-        count_shap_explainer = DeepLiftShap(StrandedCountsModelWrapper(model))
-    else:
-        prof_shap_explainer = DeepLiftShap(ProfileModelWrapper(model))
-        count_shap_explainer = DeepLiftShap(CountsModelWrapper(model))
-
-    prof_attrs, count_attrs = get_attributions(onehot_seqs,
-                                               prof_shap_explainer,
-                                               count_shap_explainer)
+    prof_attrs, count_attrs = get_attributions(onehot_seqs, model, stranded)
 
     if save:
         save_deepshap_results(onehot_seqs, prof_attrs, peak_path,

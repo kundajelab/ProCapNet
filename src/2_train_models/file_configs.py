@@ -10,10 +10,8 @@ import shutil
 MODEL_TYPES = ["strand_merged_umap", "stranded_umap", "strand_merged", "stranded"]
     
     
-    
-    
-class FoldFilesConfig():
-    def __init__(self, cell_type, model_type, fold, timestamp = None, data_type = "procap"):
+class GeneralFilesConfig():
+    def __init__(self, cell_type, model_type, data_type = "procap"):
         
         ## Parse inputs, figure out root directory
         
@@ -21,22 +19,12 @@ class FoldFilesConfig():
         
         self.cell_type = cell_type
         self.model_type = model_type
-        self.fold = fold
         self.data_type = data_type
         
         self.stranded_model = "stranded" in self.model_type
         self.umap = "umap" in self.model_type
         
-        self.proj_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))) + "/"
-        
-        # timestamp should be None when training a new model, otherwise should use existing
-        # serves as unique identifier for a model and all downstream analysis
-        if timestamp is None:
-            self.timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        else:
-            self.timestamp = timestamp
-        print("Timestamp: " + self.timestamp)
-        
+        self.proj_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))) + "/"     
         
         ## Store filepaths to everything
         
@@ -57,25 +45,72 @@ class FoldFilesConfig():
         
         # Data files (peaks, bigWigs)
         
-        data_dir = self.proj_dir + "/".join(("data", self.data_type, "processed", self.cell_type)) + "/"
+        self.data_dir = self.proj_dir + "/".join(("data", self.data_type, "processed", self.cell_type)) + "/"
         
-        self.all_peak_path = data_dir + "peaks.bed.gz"
-        self.train_peak_path = data_dir + "peaks_fold" + fold + "_train.bed.gz"
-        self.val_peak_path = data_dir + "peaks_fold" + fold + "_val.bed.gz"
-        self.test_peak_path = data_dir + "peaks_fold" + fold + "_test.bed.gz"
-        self.train_val_peak_path = data_dir + "peaks_fold" + fold + "_train_and_val.bed.gz"
+        self.all_peak_path = self.data_dir + "peaks.bed.gz"
+        self.plus_bw_path = self.data_dir + "5prime.pos.bigWig"
+        self.minus_bw_path = self.data_dir + "5prime.neg.bigWig"
+
+        for filepath in [self.all_peak_path, self.plus_bw_path, self.minus_bw_path]:
+            
+            assert os.path.exists(filepath), filepath
+
+            
+        # Random Modisco param
         
-        self.dnase_train_path = data_dir + "dnase_peaks_no_procap_overlap_fold" + fold + "_train.bed.gz"
+        self.slice = 1000
         
-        self.plus_bw_path = data_dir + "5prime.pos.bigWig"
-        self.minus_bw_path = data_dir + "5prime.neg.bigWig"
+
+    def save_config(self):
+        if os.path.exists(self.config_path):
+            os.remove(self.config_path)
+            
+        os.makedirs(self.configs_dir, exist_ok=True)
+        
+        with open(self.config_path, "w") as json_file:
+            json.dump(self.__dict__, json_file)
+
+
+    def load_model_params(self):
+        with open(self.params_path) as f:
+            model_params = json.load(f)
+        return model_params["in_window"], model_params["out_window"] 
+
+    
+    
+class FoldFilesConfig(GeneralFilesConfig):
+    def __init__(self, cell_type, model_type, fold, timestamp = None, data_type = "procap"):
+        
+        super().__init__(cell_type, model_type, data_type)
+        
+        self.fold = fold
+        
+        # timestamp should be None when training a new model, otherwise should use existing
+        # serves as unique identifier for a model and all downstream analysis
+        if timestamp is None:
+            self.timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        else:
+            self.timestamp = timestamp
+        print("Timestamp: " + self.timestamp)
+        
+        
+        ## Store filepaths to everything
+            
+        
+        # Data files (peaks, bigWigs)
+        
+        self.train_peak_path = self.data_dir + "peaks_fold" + fold + "_train.bed.gz"
+        self.val_peak_path = self.data_dir + "peaks_fold" + fold + "_val.bed.gz"
+        self.test_peak_path = self.data_dir + "peaks_fold" + fold + "_test.bed.gz"
+        self.train_val_peak_path = self.data_dir + "peaks_fold" + fold + "_train_and_val.bed.gz"
+        
+        self.dnase_train_path = self.data_dir + "dnase_peaks_no_procap_overlap_fold" + fold + "_train.bed.gz"
 
         for filepath in [self.train_peak_path,
                          self.val_peak_path,
                          self.test_peak_path,
                          self.train_val_peak_path,
-                         self.plus_bw_path,
-                         self.minus_bw_path]:
+                         self.dnase_train_path]:
             
             assert os.path.exists(filepath), filepath
             
@@ -121,7 +156,8 @@ class FoldFilesConfig():
         
         # Modisco files, params
         
-        self.slice = 1000
+        # You won't actually run modisco on models from individual folds
+        # but I'll leave this here anyways
         
         modisco_dir = self.proj_dir + "/".join(("modisco_out", self.data_type, self.cell_type, self.model_type, self.timestamp)) + "/"
         
@@ -142,17 +178,45 @@ class FoldFilesConfig():
         self.profile_hits_path = motifs_dir + "profile_motif_hits.bed"
         self.counts_hits_path = motifs_dir + "counts_motif_hits.bed"
 
-    def save_config(self):
-        if os.path.exists(self.config_path):
-            os.remove(self.config_path)
-            
-        os.makedirs(self.configs_dir, exist_ok=True)
         
-        with open(self.config_path, "w") as json_file:
-            json.dump(self.__dict__, json_file)
+        
+class MergedFilesConfig(GeneralFilesConfig):
+    def __init__(self, cell_type, model_type, data_type = "procap"):
+        
+        super().__init__(cell_type, model_type, data_type)
+        
+        ## Store filepaths to everything
+        
+        # Model evaluation files
 
+        val_dir = self.proj_dir + "/".join(("model_out", self.data_type, self.cell_type, self.model_type, "merged")) + "/"
 
-    def load_model_params(self):
-        with open(self.params_path) as f:
-            model_params = json.load(f)
-        return model_params["in_window"], model_params["out_window"] 
+        self.pred_profiles_all_path = val_dir + "all_pred_profiles.npy"
+        self.pred_logcounts_all_path = val_dir + "all_pred_logcounts.npy"
+        
+        # DeepSHAP files
+        
+        shap_dir = self.proj_dir + "/".join(("deepshap_out", self.data_type, self.cell_type, self.model_type, "merged")) + "/"
+        
+        self.profile_scores_path = shap_dir + "all_profile_deepshap.npy"
+        self.profile_onehot_scores_path = shap_dir + "all_profile_deepshap_onehot.npy"
+        
+        self.counts_scores_path = shap_dir + "all_counts_deepshap.npy"
+        self.counts_onehot_scores_path = shap_dir + "all_counts_deepshap_onehot.npy"
+        
+        # Modisco files, params
+        
+        modisco_dir = self.proj_dir + "/".join(("modisco_out", self.data_type, self.cell_type, self.model_type, "merged")) + "/"
+        
+        self.modisco_profile_results_path = modisco_dir + "profile_modisco_results.hd5"
+        self.modisco_counts_results_path = modisco_dir + "counts_modisco_results.hd5"
+        
+        # Motif calling files
+        
+        self.refmt_modisco_profile_results_path = modisco_dir + "old_fmt_profile_modisco_results.hd5"
+        self.refmt_modisco_counts_results_path = modisco_dir + "old_fmt_counts_modisco_results.hd5"
+
+        motifs_dir = self.proj_dir + "/".join(("motif_calls_out", self.data_type, self.cell_type, self.model_type, "merged")) + "/"
+        
+        self.profile_hits_path = motifs_dir + "profile_motif_hits.bed"
+        self.counts_hits_path = motifs_dir + "counts_motif_hits.bed"
