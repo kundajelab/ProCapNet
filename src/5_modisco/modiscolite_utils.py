@@ -9,7 +9,8 @@ import viz_sequence
 
 sys.path.append("../2_train_models")
 from data_loading import extract_sequences, extract_observed_profiles
-from utils import ensure_parent_dir_exists
+sys.path.append("../utils")
+from misc import ensure_parent_dir_exists
 
 random.seed(0)
 np.random.seed(0)

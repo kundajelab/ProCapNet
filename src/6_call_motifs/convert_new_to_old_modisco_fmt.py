@@ -2,16 +2,10 @@ import h5py
 import numpy as np
 
 import sys
+
 sys.path.append("../2_train_models")
-sys.path.append("../5_modisco")
+from file_configs import MergedFilesConfig
 
-from utils import load_json
-
-assert len(sys.argv) == 2, len(sys.argv)  # expecting config file input
-config_file = sys.argv[1]
-
-config = load_json(config_file)
-results_save_path = config["results_save_path"]
 
 
 def convert_new_to_old(new_format_filename, old_format_filename):
@@ -160,6 +154,18 @@ def convert_new_to_old(new_format_filename, old_format_filename):
                 
         
 if __name__ == "__main__":
+    assert len(sys.argv) == 4, len(sys.argv)  # expecting cell_type, model_type, task
+    cell_type, model_type, task = sys.argv[1:4]
+    data_type = "procap"
+
+    assert task in ["profile", "counts"], task
+
+    config = MergedFilesConfig(cell_type, model_type, data_type)
+    if task == "profile":
+        results_save_path = config.modisco_profile_results_path
+    else:
+        results_save_path = config.modisco_counts_results_path
+    
     convert_new_to_old(results_save_path,
                        results_save_path.replace("modisco_results.h", "old_fmt_modisco_results.h"))
     

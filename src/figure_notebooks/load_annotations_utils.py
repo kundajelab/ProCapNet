@@ -1,15 +1,9 @@
 from collections import defaultdict
-
-import sys
-sys.path.append("../2_train_models")
-from utils import get_proj_dir
-
 import gzip
 import numpy as np
 
 
-def get_ccre_bed(cell_type):
-    proj_dir = get_proj_dir()
+def get_ccre_bed(cell_type, proj_dir):
     return proj_dir + "/annotations/" + cell_type + "/cCREs.bed.gz"
 
 
