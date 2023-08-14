@@ -39,9 +39,9 @@ dnase_peaks_no_procap_overlap_bed="$processed_data_dir/dnase_peaks_no_procap_ove
 # Also for K562 toss out anything on Y chromosome bc K62 is female
 
 if [[ "$cell_type" == "K562" ]]; then
-  zcat "$procap_peaks_bed" | awk -v OFS="\t" '{ print $1, int(($2 + $3) / 2) - 500, int(($2 + $3) / 2) + 500 }' | sort -k1,1 -k2,2n | bedtools intersect -v -a "$dnase_peaks_bed" -b stdin | bedtools merge -i stdin -d 100 | grep -v "chrY" | gzip -nc > "$dnase_peaks_no_procap_overlap_bed"
+  zcat "$procap_peaks_bed" | grep -v "chrM" | awk -v OFS="\t" '{ print $1, int(($2 + $3) / 2) - 500, int(($2 + $3) / 2) + 500 }' | sort -k1,1 -k2,2n | bedtools intersect -v -a "$dnase_peaks_bed" -b stdin | bedtools merge -i stdin -d 100 | grep -v "chrY" | gzip -nc > "$dnase_peaks_no_procap_overlap_bed"
 else
-  zcat "$procap_peaks_bed" | awk -v OFS="\t" '{ print $1, int(($2 + $3) / 2) - 500, int(($2 + $3) / 2) + 500 }' | sort -k1,1 -k2,2n | bedtools intersect -v -a "$dnase_peaks_bed" -b stdin | bedtools merge -i stdin -d 100 | gzip -nc > "$dnase_peaks_no_procap_overlap_bed"
+  zcat "$procap_peaks_bed" | grep -v "chrM" | awk -v OFS="\t" '{ print $1, int(($2 + $3) / 2) - 500, int(($2 + $3) / 2) + 500 }' | sort -k1,1 -k2,2n | bedtools intersect -v -a "$dnase_peaks_bed" -b stdin | bedtools merge -i stdin -d 100 | gzip -nc > "$dnase_peaks_no_procap_overlap_bed"
 fi
 
 

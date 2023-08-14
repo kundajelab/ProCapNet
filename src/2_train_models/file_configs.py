@@ -216,7 +216,7 @@ class MergedFilesConfig(GeneralFilesConfig):
         self.refmt_modisco_profile_results_path = modisco_dir + "old_fmt_profile_modisco_results.hd5"
         self.refmt_modisco_counts_results_path = modisco_dir + "old_fmt_counts_modisco_results.hd5"
 
-        motifs_dir = self.proj_dir + "/".join(("motif_calls_out", self.data_type, self.cell_type, self.model_type, "merged")) + "/"
+        motifs_dir = self.proj_dir + "/".join(("motifs_out", self.data_type, self.cell_type, self.model_type, "merged")) + "/"
         
-        self.profile_hits_path = motifs_dir + "profile_motif_hits.bed"
-        self.counts_hits_path = motifs_dir + "counts_motif_hits.bed"
+        self.profile_hits_path = motifs_dir + "profile_hits.bed"
+        self.counts_hits_path = motifs_dir + "counts_hits.bed"
