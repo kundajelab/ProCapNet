@@ -21,7 +21,9 @@ def model_predict_with_rc(model, onehot_seqs):
         pred_profiles, pred_logcounts = model.predict(onehot_seqs)
         rc_pred_profiles, rc_pred_logcounts = model.predict(torch.flip(onehot_seqs, [-1, -2]))
     
+    # reverse-complement (strand-flip) BOTH of the predictions
     rc_pred_profiles = rc_pred_profiles[:, ::-1, ::-1]
+    rc_pred_logcounts = rc_pred_logcounts[:, ::-1]
     
     # take the average prediction across the fwd and RC sequences
     merged_pred_profiles = np.log(np.array([np.exp(pred_profiles), np.exp(rc_pred_profiles)]).mean(axis=0))

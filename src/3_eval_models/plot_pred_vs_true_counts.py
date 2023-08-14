@@ -1,5 +1,4 @@
 import sys
-assert len(sys.argv) == 2
 
 sys.path.append('../2_train_models')
 
@@ -7,31 +6,34 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-from utils import load_json
 from data_loading import extract_peaks
 
 
-# load filepaths and other info from config file
+assert len(sys.argv) == 5, len(sys.argv)  # expecting celltype, model_type, fold, timestamp
+cell_type, model_type, fold, timestamp = sys.argv[1:5]
+data_type = "procap"
 
-config_path = sys.argv[1]
 
-config = load_json(config_path)
+sys.path.append("../2_train_models")
+from file_configs import FoldFilesConfig as FilesConfig
+config = FilesConfig(cell_type, model_type, fold, timestamp, data_type = data_type)
+in_window, out_window = config.load_model_params()
 
-in_window = config["in_window"]
-out_window = config["out_window"]
 
-genome_path = config["genome_path"]
-chrom_sizes = config["chrom_sizes"]
+# load filepaths and other info from config
 
-val_peak_path = config["val_peak_path"]
+genome_path = config.genome_path
+chrom_sizes = config.chrom_sizes
 
-plus_bw_path = config["plus_bw_path"]
-minus_bw_path = config["minus_bw_path"]
+val_peak_path = config.test_peak_path
 
-pred_logcounts_path = config["pred_logcounts_val_path"]
-pred_profiles_path = config["pred_profiles_val_path"]
+plus_bw_path = config.plus_bw_path
+minus_bw_path = config.minus_bw_path
 
-stranded = config["stranded_model"]
+pred_logcounts_path = config.pred_logcounts_test_path
+pred_profiles_path = config.pred_profiles_test_path
+
+stranded = config.stranded_model
 
 
 # where we will save the plots made by this script
@@ -39,8 +41,7 @@ stranded = config["stranded_model"]
 out_dir = "plots/"
 os.makedirs(out_dir, exist_ok=True)
 
-out_base = config_path.split("model_out/")[1].replace("/", "__").replace("config.json", "") 
-out_prefix = out_dir + out_base + "predvtruecounts__"
+out_prefix = out_dir + "_".join(["predvtruecounts_", cell_type, model_type, fold, timestamp]) + "_"
 
 
 # load predicted read counts (made by val.py)
