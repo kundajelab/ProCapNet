@@ -29,38 +29,54 @@ mkdir -p "$processed_data_dir"
 
 
 # These files were downloaded from ENCODE (see download_data.sh)
-raw_uni_peaks="$raw_data_dir/peaks.uni.bed.gz"
-raw_bi_peaks="$raw_data_dir/peaks.bi.bed.gz"
-
-if [ ! -f "$raw_uni_peaks" ] || [ ! -f "$raw_bi_peaks" ]; then
-  echo "Missing uni- or bi-directional peak file: $raw_uni_peaks, $raw_bi_peaks" && exit 1
-fi
 
 all_peaks="$processed_data_dir/peaks.bed.gz"
   
-# This script combines the lines in the two peak files,
-# retaining only the info that it makes sense to retain,
-# since the two files have different columns.
-python _merge_uni_bi_peaks.py "$raw_uni_peaks" "$raw_bi_peaks" "$all_peaks"
+if [[ "$data_type" == "procap" ]]; then
+  echo "Processing as PRO-cap..."
 
-#echo "Hi Kelly. This is you from the past. You need to implement train/val/test splitting for 5-fold CV. Bye <3"
+  raw_uni_peaks="$raw_data_dir/peaks.uni.bed.gz"
+  raw_bi_peaks="$raw_data_dir/peaks.bi.bed.gz"
 
-#exit 0
+  if [ ! -f "$raw_uni_peaks" ] || [ ! -f "$raw_bi_peaks" ]; then
+    echo "Missing uni- or bi-directional peak file: $raw_uni_peaks, $raw_bi_peaks" && exit 1
+  fi
 
+  # This script combines the lines in the two peak files,
+  # retaining only the info that it makes sense to retain,
+  # since the two files have different columns.
+  python _merge_uni_bi_peaks.py "$raw_uni_peaks" "$raw_bi_peaks" "$all_peaks"
 
-# Split the set of all peaks into train/val/test, according to chromosome
-python _split_peaks_train_val_test.py "$all_peaks"
+  # Check that the merged peak file has the same # lines as the two input files put together
+  if [ `zcat "$raw_uni_peaks" "$raw_bi_peaks" | wc -l` -ne `zcat "$all_peaks" | wc -l` ]; then
+    echo "Error: merged uni- and bi-directional peaks not the right length." && exit 1
+  fi
 
-# the script above should output the files below:
-#echo "Examples in the training set:" `zcat "$processed_data_dir/peaks_uni_and_bi_train.bed.gz" | wc -l`
-#echo "Examples in the validation set:" `zcat "$processed_data_dir/peaks_uni_and_bi_val.bed.gz" | wc -l`
-#echo "Examples in the test set:" `zcat "$processed_data_dir/peaks_uni_and_bi_test.bed.gz" | wc -l`
+elif [[ "$data_type" == "cage" ]]; then
+  echo "Processing as CAGE..."
 
-# Check that the merged peak file has the same # lines as the two input files put together
-if [ `zcat "$raw_uni_peaks" "$raw_bi_peaks" | wc -l` -ne `zcat "$all_peaks" | wc -l` ]; then
-  echo "Error: merged uni- and bi-directional peaks not the right length." && exit 1
+  raw_peaks_rep1="$raw_data_dir/peaks.rep1.bed.gz"
+  raw_peaks_rep2="$raw_data_dir/peaks.rep2.bed.gz"
+  
+  # merge across reps, filter out stuff the model code isn't expecting (genome scaffolds, chrM/EBV, etc)
+  zcat "$raw_peaks_rep1" "$raw_peaks_rep2" | sort -k1,1 -k2,2n | bedtools merge -i stdin | grep -e "^chr[0-9XY]*	" | gzip -nc > "$all_peaks"
+
+elif [[ "$data_type" == "rampage" ]]; then
+  echo "Processing as RAMPAGE..."  # same as CAGE
+
+  raw_peaks_rep1="$raw_data_dir/peaks.rep1.bed.gz"
+  raw_peaks_rep2="$raw_data_dir/peaks.rep2.bed.gz"
+  
+  # merge across reps, filter out stuff the model code isn't expecting (genome scaffolds, chrM/EBV, etc)
+  zcat "$raw_peaks_rep1" "$raw_peaks_rep2" | sort -k1,1 -k2,2n | bedtools merge -i stdin | grep -e "^chr[0-9XY]*	" | gzip -nc > "$all_peaks"
+
+else
+  echo "Unrecognized data_type argument." && exit 1
 fi
 
+echo "Splitting peaks into train/val/test sets by fold..."
+# Split the set of all peaks into train/val/test, according to chromosome
+python _split_peaks_train_val_test.py "$all_peaks"
 
 echo "Peaks processed for cell type $cell_type."
 

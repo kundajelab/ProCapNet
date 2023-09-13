@@ -62,18 +62,18 @@ def plot_scatter_and_boxplot(data, position, color = "k", dot_size=1, dot_alpha=
         dot_alpha = 2 * dot_alpha
         
     dots = plt.scatter(data, [position] * len(data),
-                       color = color, s = dot_size, alpha=dot_alpha)
-    jitter_dots(dots, along_y=True)
+                       color = color, s = dot_size, alpha=dot_alpha, linewidths=0)
+    jitter_dots(dots, along_y=True, jitter_by=0.2)
     
     bps = boxplot_stats(data)[0]
     
-    plt.plot([bps["whislo"], bps["whishi"]], [position + 0.4] * 2,
-             linewidth=box_whisker_linewidth, color=color, alpha=0.7)
-    plt.plot([bps["q1"], bps["q3"]], [position + 0.37] * 2,
-             linewidth=box_linewidth, color=color, alpha=0.9, zorder=28)
-    plt.plot([bps["q1"], bps["q3"]], [position + 0.43] * 2,
-             linewidth=box_linewidth, color=color, alpha=0.9, zorder=29)
+    plt.plot([bps["whislo"], bps["whishi"]], [position + 0.35] * 2,
+             linewidth=box_whisker_linewidth, color=color, alpha=1, zorder=30)
+    plt.plot([bps["q1"], bps["q3"]], [position + 0.33] * 2,
+             linewidth=box_linewidth, color=color, alpha=1, zorder=28)
+    plt.plot([bps["q1"], bps["q3"]], [position + 0.38] * 2,
+             linewidth=box_linewidth, color=color, alpha=1, zorder=29)
 
     # draw median dot
-    plt.scatter(bps["med"], [position + 0.4], s=8, color="k", zorder=30)
-    plt.scatter(bps["med"], [position + 0.4], s=3, color="white", zorder=31)
+    plt.scatter(bps["med"], [position + 0.35], s=8, color="k", zorder=31)
+    plt.scatter(bps["med"], [position + 0.35], s=3, color="white", zorder=32)

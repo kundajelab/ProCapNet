@@ -14,6 +14,7 @@ annots_dir="$proj_dir/annotations"
 mkdir -p "$raw_data_dir"
 mkdir -p "$annots_dir"
 
+
 ### K562 PRO-cap experiment (ENCSR261KBX)
 
 dest_dir="$raw_data_dir/K562"
@@ -117,6 +118,47 @@ curl -L -u "$acess_key":"$secret_key" https://www.encodeproject.org/files/ENCFF4
 wget https://jaspar.genereg.net/download/data/2022/CORE/JASPAR2022_CORE_non-redundant_pfms_meme.txt -O "$annots_dir/JASPAR2022_CORE_pfms.meme"
 
 wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_41/gencode.v41.annotation.gtf.gz -O "$annots_dir/gencode.v41.annotation.gtf.gz"
+
+
+
+### CAGE and RAMPAGE
+
+### K562 CAGE
+
+raw_data_dir="$proj_dir/data/cage/raw"
+mkdir -p "$raw_data_dir"
+
+dest_dir="$raw_data_dir/K562"
+mkdir -p "$dest_dir"
+
+# bams (filtered?)
+wget https://www.encodeproject.org/files/ENCFF754FAU/@@download/ENCFF754FAU.bam -O "$dest_dir/rep1.raw.bam"
+wget https://www.encodeproject.org/files/ENCFF366MWI/@@download/ENCFF366MWI.bam -O "$dest_dir/rep2.raw.bam"
+
+# peak calls (per-replicate, not IDR; will use overlap between replicates)
+#wget https://www.encodeproject.org/files/ENCFF698DQS/@@download/ENCFF698DQS.bed.gz -O "$dest_dir/peaks.bed.gz"
+wget https://www.encodeproject.org/files/ENCFF638ZUQ/@@download/ENCFF638ZUQ.bed.gz -O "$dest_dir/peaks.rep1.bed.gz"
+wget https://www.encodeproject.org/files/ENCFF370YBR/@@download/ENCFF370YBR.bed.gz -O "$dest_dir/peaks.rep2.bed.gz"
+
+
+### K562 RAMPAGE
+
+raw_data_dir="$proj_dir/data/rampage/raw"
+mkdir -p "$raw_data_dir"
+
+dest_dir="$raw_data_dir/K562"
+mkdir -p "$dest_dir"
+
+# bams
+wget https://www.encodeproject.org/files/ENCFF038VNX/@@download/ENCFF038VNX.bam -O "$dest_dir/rep1.raw.bam"
+wget https://www.encodeproject.org/files/ENCFF618CKG/@@download/ENCFF618CKG.bam -O "$dest_dir/rep2.raw.bam"
+
+# peak calls (per-replicate, not IDR; will use overlap between replicates)
+wget https://www.encodeproject.org/files/ENCFF923WZG/@@download/ENCFF923WZG.bed.gz -O "$dest_dir/peaks.rep1.bed.gz"
+wget https://www.encodeproject.org/files/ENCFF954ZBU/@@download/ENCFF954ZBU.bed.gz -O "$dest_dir/peaks.rep2.bed.gz"
+
+
+
 
 
 echo "Done downloading data."

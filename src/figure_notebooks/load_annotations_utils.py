@@ -230,9 +230,8 @@ def get_gene_region_overlap(coords, gene_regions_files, in_window=2114, out_wind
         overlap_bools = []
         for coord in coords:
             chrom, start, end, summit_pos, summit_neg = clean_coord_summits(coord)
-            # adjust the starts and ends of peak coordinates so they only cover summits +/- 50 bp
-            # (will probably get a lot of FP overlaps)
-            coord_adjust = (chrom, min(summit_pos, summit_neg) - 50, max(summit_pos, summit_neg) + 50)
+            # adjust the starts and ends of peak coordinates so they only cover summits +1 bp
+            coord_adjust = (chrom, min(summit_pos, summit_neg) - 1, max(summit_pos, summit_neg))
 
             overlap_bool = does_a_overlap_anything_in_b(coord_adjust, regions_by_chrom[chrom])
             overlap_bools.append(overlap_bool)

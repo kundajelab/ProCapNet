@@ -51,9 +51,20 @@ for raw_bam in $raw_data_dir/*.${raw_file_mid}bam; do
   processed_bam_basename=`basename "$raw_bam" | sed "s/${raw_file_mid}//"`
   processed_bam="$processed_data_dir/$processed_bam_basename"  # will be final processed bam file
     
-  # Remove R1, leaving just R2 (where the TSS actually is for PE PRO-cap)
-  echo "Filtering R1 from $raw_bam (assuming paired-end data!)..."
-  samtools view -hb -f 128 "$raw_bam" -o "$tmp_bam"
+  if [[ "$data_type" == "procap" ]]; then
+    # Remove R1, leaving just R2 (where the TSS actually is for PE PRO-cap)
+    echo "Filtering R1 from $raw_bam (assuming paired-end data!)..."
+    samtools view -hb -f 128 "$raw_bam" -o "$tmp_bam"
+  elif [[ "$data_type" == "cage" ]]; then
+    echo "Assuming CAGE single-end data!"
+    cp "$raw_bam" "$tmp_bam"
+  elif [[ "$data_type" == "rampage" ]]; then
+    # this is what the ENCODE pipeline does
+    echo "Filtering R2 from $raw_bam (assuming paired-end data!)..."
+    samtools view -hb -f 64 "$raw_bam" -o "$tmp_bam"
+  else
+    echo "Unrecognized data type argument." && exit 1
+  fi
     
   # Sort bam file (needed for ucsc tools to make bigwigs)
   echo "Sorting $raw_bam..."
@@ -72,7 +83,17 @@ for raw_bam in $raw_data_dir/*.${raw_file_mid}bam; do
     rep_bigwig=`echo "$processed_bam" | sed "s|.bam|.5prime.${strand}.bigWig|"`
 
     echo "Converting replicate bam to bedgraph (5' ends only)..."
-    genomeCoverageBed -ibam "$processed_bam" -bg -strand "$strand_symbol" -5 | grep -v "_" | LC_COLLATE=C sort -k1,1 -k2,2n > "$tmp_bg"
+    
+    if [[ "$data_type" == "procap" ]]; then
+      genomeCoverageBed -ibam "$processed_bam" -bg -strand "$strand_symbol" -5 | grep -v "_" | LC_COLLATE=C sort -k1,1 -k2,2n > "$tmp_bg"
+    elif [[ "$data_type" == "cage" ]]; then
+      genomeCoverageBed -ibam "$processed_bam" -bg -strand "$strand_symbol" -5 | grep -e "^chr[0-9XY]*	" | LC_COLLATE=C sort -k1,1 -k2,2n > "$tmp_bg"
+    elif [[ "$data_type" == "rampage" ]]; then
+      genomeCoverageBed -ibam "$processed_bam" -bg -strand "$strand_symbol" -5 | grep -e "^chr[0-9XY]*	" | LC_COLLATE=C sort -k1,1 -k2,2n > "$tmp_bg"
+    else
+      echo "Unrecognized data type argument." && exit 1
+    fi
+    
     echo "Converting bedgraph to bigWig (5' ends only)..."
     bedGraphToBigWig "$tmp_bg" "$chrom_sizes" "$rep_bigwig"
 

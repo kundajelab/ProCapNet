@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# most of this code is from the ENCODE ATAC-seq pipeline
+
 set -e
 
 script_dir=$( dirname -- "$( readlink -f -- "$0"; )"; )
@@ -89,7 +91,7 @@ for pseudorep in "${pseudoreps[@]}"; do
     fi
 
     pr_pref=`echo "$pseudorep" | sed 's/.tagAlign.gz//'`
-    zcat -f "$pseudorep" | LC_COLLATE=C sort -k1,1 -k2,2n | bedtools genomecov -5 -bg -strand "$strand_symbol" -g "$chrom_sizes" -i stdin > "$data_dir/tmp.bed"
+    zcat -f "$pseudorep" | LC_COLLATE=C sort -k1,1 -k2,2n | grep -e "^chr[0-9XY]*	" |  bedtools genomecov -5 -bg -strand "$strand_symbol" -g "$chrom_sizes" -i stdin > "$data_dir/tmp.bed"
     bedGraphToBigWig "$data_dir/tmp.bed" "$chrom_sizes" "${pr_pref}.${strand}.bigWig"
   done
 
