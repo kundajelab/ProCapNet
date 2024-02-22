@@ -32,7 +32,7 @@ if [ ! -f "$expt_peaks_bed" ]; then
   echo "Missing $data_type peaks file: $expt_peaks_bed" && exit 1
 fi
 
-dnase_peaks_no_expt_overlap_bed="$processed_data_dir/dnase_peaks_no_expt_overlap.bed.gz"
+dnase_peaks_no_expt_overlap_bed="$processed_data_dir/dnase_peaks_no_${data_type}_overlap.bed.gz"
 
 # First, filter out any DNase peaks overlapping PRO-cap/CAGE/RAMPAGE peaks (or within 500bp of their center)
 # Then, merge the remaining peaks so they're not so redundant

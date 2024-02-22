@@ -6,7 +6,11 @@ if len(sys.argv) == 6:
 data_type = "procap"
 
 sys.path.append("../2_train_models")
-from file_configs import FoldFilesConfig as FilesConfig
+if "promoters_only" in model_type:
+    from file_configs_promoters_only import PromotersOnlyFoldFilesConfig as FilesConfig
+else:
+	from file_configs import FoldFilesConfig as FilesConfig
+
 config = FilesConfig(cell_type, model_type, fold, timestamp, data_type = data_type)
 in_window, out_window = config.load_model_params()
 

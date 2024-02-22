@@ -7,7 +7,9 @@ import shutil
 
 
 # what model types are implemented (this must track with options allowed in train.py)
-MODEL_TYPES = ["strand_merged_umap", "stranded_umap", "strand_merged", "stranded"]
+MODEL_TYPES = ["strand_merged_umap", "stranded_umap", "strand_merged", "stranded",
+               "promoters_only_strand_merged_umap", "promoters_only_stranded_umap",
+               "promoters_only_strand_merged", "promoters_only_stranded", "strand_merged_umap_replicate"]
     
     
 class GeneralFilesConfig():
@@ -104,7 +106,7 @@ class FoldFilesConfig(GeneralFilesConfig):
         self.test_peak_path = self.data_dir + "peaks_fold" + fold + "_test.bed.gz"
         self.train_val_peak_path = self.data_dir + "peaks_fold" + fold + "_train_and_val.bed.gz"
         
-        self.dnase_train_path = self.data_dir + "dnase_peaks_no_procap_overlap_fold" + fold + "_train.bed.gz"
+        self.dnase_train_path = self.data_dir + "dnase_peaks_no_" + data_type + "_overlap_fold" + fold + "_train.bed.gz"
 
         for filepath in [self.train_peak_path,
                          self.val_peak_path,
