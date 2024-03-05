@@ -102,6 +102,10 @@ def format_label_list(label_list):
 
 
 def find_peak_overlap_labels(coords, bed_file_with_labels, in_window=2114, out_window=1000):
+    # this function finds overlaps between coords and a bed file *with labels*,
+    # and tells you what labels overlapped with each of the regions in coords.
+    # the functon "find_peak_overlap" is different: it just returns booleans for yes/no overlap
+    
     annots = load_annotations(bed_file_with_labels, label=True)
 
     # get set of chromosomes included in peak set
@@ -183,6 +187,10 @@ def does_a_overlap_anything_in_b(coord_a, list_b):
 
 
 def find_peak_overlap(coords, bed_filepath, in_window=2114, out_window=1000):
+    # this function returns booleans for yes/no overlap between coords and a bed file.
+    # the other function find_peak_overlap_labels finds overlaps between coords and a
+    # bed file *with labels*, and tells you what labels overlapped with each region in coords.
+    
     annots = load_annotations(bed_filepath, label=False)
 
     # get set of chromosomes included in peak set
