@@ -19,3 +19,10 @@ __pycache__/
 */logs/
 */*log*
 */*/*log*
+src/_figure_notebooks/
+src/prime_editing/
+src/figure_notebooks/fig6_data/
+src/figure_notebooks/fig7_data/
+src/figure_notebooks/fig_cell_types_union_preds/
+src/figure_notebooks/te_enrichment_files/
+src/variant-scorer/
