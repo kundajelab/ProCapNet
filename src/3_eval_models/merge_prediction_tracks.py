@@ -40,11 +40,10 @@ def main(cell_type, model_type, timestamps, data_type):
     
     
 if __name__ == "__main__":
-    assert len(sys.argv) == 4, len(sys.argv)
+    assert len(sys.argv) == 5, len(sys.argv)
 
-    cell_type, model_type = sys.argv[1:3]
-    timestamps = sys.argv[3].split()
-    data_type = "procap"
+    cell_type, model_type, data_type = sys.argv[1:4]
+    timestamps = sys.argv[4].split()
     
     main(cell_type, model_type, timestamps, data_type)
     

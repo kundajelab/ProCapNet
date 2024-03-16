@@ -1,6 +1,6 @@
 # ProCapNet: Dissecting the *cis*-regulatory syntax of transcription initiation with deep learning
 
-This repository contains all of the code used for data downloading and processing, model training, evaluation, and interpretation, and downstream analyses used in the ProCapNet paper  (add link here once it's up on BioRxiv).
+This repository contains all of the code used for data downloading and processing, model training, evaluation, and interpretation, and downstream analyses used in the ProCapNet paper (add link here once it's up on BioRxiv).
 
 In this project, we trained a neural network to predict transcription initiation (measured by PRO-cap experiments) at base-resolution using the BPNet model framework. We then interpreted the model to discover initiation-predictive sequence motifs, characterize how the epistasis between these motifs regulates the rate and positioning of transcription initiation, investigate the sequence logic behind enhancer-RNA, and more.
 
@@ -14,7 +14,7 @@ See `src/0_download_files/0.1_download_data.sh` -- this script shows how most da
 
 **2. I want to know how you processed the model training data.**
 
-PRO-cap data itself was processed from BAMs to bigWigs by this script: `src/1_process_data/1.0_process_bams.sh`.
+PRO-cap data itself was processed from BAMs to bigWigs using this script: `src/1_process_data/1.0_process_bams.sh`.
 
 Model training used both PRO-cap peaks ("positive" examples) and DNase peaks not overlapping PRO-cap peaks ("negative" examples). These two sets of loci were processed using the scripts `src/1_process_data/1.1_process_peaks.sh` and `src/1_process_data/1.2_process_dnase_peaks.sh`, respectively. The second script relies on outputs from the first.
 
@@ -50,7 +50,7 @@ See below!
 
 ## Running Everything From Scratch
 
-The script `run_everything.sh` exists as a roadmap of what order to run all of the code in. I would probably not literally run this script, because that would take weeks on a good GPU and it might skip a step or two; instead I would recommend running the commands inside it one-by-one.
+The script `run_everything.sh` exists as a roadmap of what order to run all of the code in. I would probably not literally run this script, because that would take weeks on a good GPU; instead I would recommend running the commands inside it one-by-one.
 
 ### Installation & Setup
 
@@ -78,7 +78,7 @@ For example, to populate your new data directory with data, and then process tha
 ```
 Note that in some cases, there are additional *optional* `runall.sh` scripts, which are for if you are looking to reproduce a specific, singular result far downstream of training models. For instance, `./src/1_process_data/1_runall.sh` processes all the data you need to train a model, get contribution scores and motifs, etc., while `./src/1_process_data/1_runall_optional_annotations.sh` will also process all the extra data needed to run the model evaluations stratified by various region classifications from Figure 1 of the paper. These optional scripts are also included in `run_everything.sh`, but you can skip running them if you don't need to produce the results that depend on them.
 
-Note #2: model training, prediction, and contribution score generation are expecting to be run on a GPU, and the `runall.sh` scripts for those steps have a line specifying the GPU to use (looks like `GPU="MIG-166d7783-762d-5f61-b31c-549eb4e0fba0"`). You should change that line to match your GPU's ID.
+Note #2: model training, prediction, and contribution score generation are expecting to be run on a GPU, and the `runall.sh` scripts for those steps expect an input argument specifying the ID of the GPU to use. If you're not sure what GPU Id to use, 0 is a good guess. 
 
 Note #3: trained models are saved using unique identifiers -- namely, timestamp strings. To point the model prediction and contribution score scripts at the correct models, you will need to supply the timestamps of the models you trained. So for example, in `src/3_eval_models/3_runall.sh`, you would edit this line:
 ```
@@ -88,7 +88,7 @@ timestamps=( "2023-05-29_15-51-40" "2023-05-29_15-58-41" "2023-05-29_15-59-09" "
 
 Any jupyter notebook in `src/figure_notebooks/` can be run once you have run the scripts in folders 1-6. They require the same conda environment as the scripts -- the package `nb_conda_kernels` was used for running notebooks inside conda environments. The notebooks show plots inside the notebooks themselves, but also save every plot to the `figures/` folder in high resolution.
 
-Note that you may need to point notebooks to the correct GPU and correct model timestamps in the same way as with earlier scripts.
+Note that you may need to point notebooks to the correct GPU and correct model timestamps in the same way as with earlier scripts, but in the case of the notebooks, you'll need to edit the info directly in the first few cells of each notebook.
 
 That's it!
 
@@ -101,7 +101,7 @@ That's it!
 
 ### Repositories this project uses
 - https://github.com/jmschrei/bpnet-lite
-- https://github.com/jmschrei/tfmodisco-lite v2.0.0
+- https://github.com/jmschrei/tfmodisco-lite
 
 
 ## Primary Dependencies
@@ -110,7 +110,7 @@ That's it!
 - numpy v1.22
 - pybigwig v0.3.18
 - pyfaidx v0.7
-- Captum v 0.5 (for deepshap)
+- Captum v0.5 (for deepshap)
 - modisco-lite v2.0.0
 - bedtools v2.30
 - scikit-learn v1.1.2
