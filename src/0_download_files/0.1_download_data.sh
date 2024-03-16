@@ -36,81 +36,78 @@ wget https://www.encodeproject.org/files/ENCFF274YGF/@@download/ENCFF274YGF.bed.
 
 ### More cell types!
 
-acess_key="QZEZ7VSO"
-secret_key="57oxdqle3af3mzrd"
-
 dest_dir="$raw_data_dir/MCF10A"
 mkdir -p "$dest_dir"
 
-curl -L -u "$acess_key":"$secret_key" https://www.encodeproject.org/files/ENCFF010CAI/@@download/ENCFF010CAI.bam -o "$dest_dir/rep1.raw.bam"
-curl -L -u "$acess_key":"$secret_key" https://www.encodeproject.org/files/ENCFF966SIN/@@download/ENCFF966SIN.bam -o "$dest_dir/rep2.raw.bam"
-curl -L -u "$acess_key":"$secret_key" https://www.encodeproject.org/files/ENCFF463RFT/@@download/ENCFF463RFT.bam -o "$dest_dir/rep3.raw.bam"
-curl -L -u "$acess_key":"$secret_key" https://www.encodeproject.org/files/ENCFF123ORK/@@download/ENCFF123ORK.bam -o "$dest_dir/rep4.raw.bam"
-curl -L -u "$acess_key":"$secret_key" https://www.encodeproject.org/files/ENCFF478BHR/@@download/ENCFF478BHR.bed.gz -o "$dest_dir/peaks.bi.bed.gz"
-curl -L -u "$acess_key":"$secret_key" https://www.encodeproject.org/files/ENCFF875PER/@@download/ENCFF875PER.bed.gz -o "$dest_dir/peaks.uni.bed.gz"
+wget https://www.encodeproject.org/files/ENCFF010CAI/@@download/ENCFF010CAI.bam -O "$dest_dir/rep1.raw.bam"
+wget https://www.encodeproject.org/files/ENCFF966SIN/@@download/ENCFF966SIN.bam -O "$dest_dir/rep2.raw.bam"
+wget https://www.encodeproject.org/files/ENCFF463RFT/@@download/ENCFF463RFT.bam -O "$dest_dir/rep3.raw.bam"
+wget https://www.encodeproject.org/files/ENCFF123ORK/@@download/ENCFF123ORK.bam -O "$dest_dir/rep4.raw.bam"
+wget https://www.encodeproject.org/files/ENCFF478BHR/@@download/ENCFF478BHR.bed.gz -O "$dest_dir/peaks.bi.bed.gz"
+wget https://www.encodeproject.org/files/ENCFF875PER/@@download/ENCFF875PER.bed.gz -O "$dest_dir/peaks.uni.bed.gz"
 
 # annotations
 dest_dir="$annots_dir/MCF10A"
 mkdir -p "$dest_dir"
-curl -L -u "$acess_key":"$secret_key" https://www.encodeproject.org/files/ENCFF916CRB/@@download/ENCFF916CRB.bed.gz -o "$dest_dir/DNase_peaks.bed.gz"
+wget https://www.encodeproject.org/files/ENCFF916CRB/@@download/ENCFF916CRB.bed.gz -O "$dest_dir/DNase_peaks.bed.gz"
 
 
 dest_dir="$raw_data_dir/A673"
 mkdir -p "$dest_dir"
 
-curl -L -u "$acess_key":"$secret_key" https://www.encodeproject.org/files/ENCFF121DPX/@@download/ENCFF121DPX.bam -o "$dest_dir/rep1.raw.bam"
-curl -L -u "$acess_key":"$secret_key" https://www.encodeproject.org/files/ENCFF349OYZ/@@download/ENCFF349OYZ.bam -o "$dest_dir/rep2.raw.bam"
-curl -L -u "$acess_key":"$secret_key" https://www.encodeproject.org/files/ENCFF728PUD/@@download/ENCFF728PUD.bam -o "$dest_dir/rep3.raw.bam"
-curl -L -u "$acess_key":"$secret_key" https://www.encodeproject.org/files/ENCFF395TST/@@download/ENCFF395TST.bam -o "$dest_dir/rep4.raw.bam"
-curl -L -u "$acess_key":"$secret_key" https://www.encodeproject.org/files/ENCFF268UEL/@@download/ENCFF268UEL.bed.gz -o "$dest_dir/peaks.bi.bed.gz"
-curl -L -u "$acess_key":"$secret_key" https://www.encodeproject.org/files/ENCFF045MXI/@@download/ENCFF045MXI.bed.gz -o "$dest_dir/peaks.uni.bed.gz"
+wget https://www.encodeproject.org/files/ENCFF121DPX/@@download/ENCFF121DPX.bam -O "$dest_dir/rep1.raw.bam"
+wget https://www.encodeproject.org/files/ENCFF349OYZ/@@download/ENCFF349OYZ.bam -O "$dest_dir/rep2.raw.bam"
+wget https://www.encodeproject.org/files/ENCFF728PUD/@@download/ENCFF728PUD.bam -O "$dest_dir/rep3.raw.bam"
+wget https://www.encodeproject.org/files/ENCFF395TST/@@download/ENCFF395TST.bam -O "$dest_dir/rep4.raw.bam"
+wget https://www.encodeproject.org/files/ENCFF268UEL/@@download/ENCFF268UEL.bed.gz -O "$dest_dir/peaks.bi.bed.gz"
+wget https://www.encodeproject.org/files/ENCFF045MXI/@@download/ENCFF045MXI.bed.gz -O "$dest_dir/peaks.uni.bed.gz"
 
 # annotations
 dest_dir="$annots_dir/A673"
 mkdir -p "$dest_dir"
-curl -L -u "$acess_key":"$secret_key" https://www.encodeproject.org/files/ENCFF629STI/@@download/ENCFF629STI.bed.gz -o "$dest_dir/DNase_peaks.bed.gz"
+wget https://www.encodeproject.org/files/ENCFF629STI/@@download/ENCFF629STI.bed.gz -O "$dest_dir/DNase_peaks.bed.gz"
 
 
 dest_dir="$raw_data_dir/CACO2"
 mkdir -p "$dest_dir"
 
-curl -L -u "$acess_key":"$secret_key" https://www.encodeproject.org/files/ENCFF477BQK/@@download/ENCFF477BQK.bam -o "$dest_dir/rep1.raw.bam"
-curl -L -u "$acess_key":"$secret_key" https://www.encodeproject.org/files/ENCFF725CZI/@@download/ENCFF725CZI.bam -o "$dest_dir/rep2.raw.bam"
-curl -L -u "$acess_key":"$secret_key" https://www.encodeproject.org/files/ENCFF396MZI/@@download/ENCFF396MZI.bed.gz -o "$dest_dir/peaks.bi.bed.gz"
-curl -L -u "$acess_key":"$secret_key" https://www.encodeproject.org/files/ENCFF814YZW/@@download/ENCFF814YZW.bed.gz -o "$dest_dir/peaks.uni.bed.gz"
+wget https://www.encodeproject.org/files/ENCFF477BQK/@@download/ENCFF477BQK.bam -O "$dest_dir/rep1.raw.bam"
+wget https://www.encodeproject.org/files/ENCFF725CZI/@@download/ENCFF725CZI.bam -O "$dest_dir/rep2.raw.bam"
+wget https://www.encodeproject.org/files/ENCFF396MZI/@@download/ENCFF396MZI.bed.gz -O "$dest_dir/peaks.bi.bed.gz"
+wget https://www.encodeproject.org/files/ENCFF814YZW/@@download/ENCFF814YZW.bed.gz -O "$dest_dir/peaks.uni.bed.gz"
 
 # annotations
 dest_dir="$annots_dir/CACO2"
 mkdir -p "$dest_dir"
-curl -L -u "$acess_key":"$secret_key" https://www.encodeproject.org/files/ENCFF579UXQ/@@download/ENCFF579UXQ.bed.gz -o "$dest_dir/DNase_peaks.bed.gz"
+wget https://www.encodeproject.org/files/ENCFF579UXQ/@@download/ENCFF579UXQ.bed.gz -O "$dest_dir/DNase_peaks.bed.gz"
 
 
 dest_dir="$raw_data_dir/CALU3"
 mkdir -p "$dest_dir"
 
-curl -L -u "$acess_key":"$secret_key" https://www.encodeproject.org/files/ENCFF630HAF/@@download/ENCFF630HAF.bam -o "$dest_dir/rep1.raw.bam"
-curl -L -u "$acess_key":"$secret_key" https://www.encodeproject.org/files/ENCFF226MDQ/@@download/ENCFF226MDQ.bam -o "$dest_dir/rep2.raw.bam"
-curl -L -u "$acess_key":"$secret_key" https://www.encodeproject.org/files/ENCFF982XOO/@@download/ENCFF982XOO.bed.gz -o "$dest_dir/peaks.bi.bed.gz"
-curl -L -u "$acess_key":"$secret_key" https://www.encodeproject.org/files/ENCFF819VDW/@@download/ENCFF819VDW.bed.gz -o "$dest_dir/peaks.uni.bed.gz"
+wget https://www.encodeproject.org/files/ENCFF630HAF/@@download/ENCFF630HAF.bam -O "$dest_dir/rep1.raw.bam"
+wget https://www.encodeproject.org/files/ENCFF226MDQ/@@download/ENCFF226MDQ.bam -O "$dest_dir/rep2.raw.bam"
+wget https://www.encodeproject.org/files/ENCFF982XOO/@@download/ENCFF982XOO.bed.gz -O "$dest_dir/peaks.bi.bed.gz"
+wget https://www.encodeproject.org/files/ENCFF819VDW/@@download/ENCFF819VDW.bed.gz -O "$dest_dir/peaks.uni.bed.gz"
 
 # annotations
 dest_dir="$annots_dir/CALU3"
 mkdir -p "$dest_dir"
-curl -L -u "$acess_key":"$secret_key" https://www.encodeproject.org/files/ENCFF930GWQ/@@download/ENCFF930GWQ.bed.gz -o "$dest_dir/DNase_peaks.bed.gz"
+wget https://www.encodeproject.org/files/ENCFF930GWQ/@@download/ENCFF930GWQ.bed.gz -O "$dest_dir/DNase_peaks.bed.gz"
 
 
 dest_dir="$raw_data_dir/HUVEC"
 mkdir -p "$dest_dir"
 
-curl -L -u "$acess_key":"$secret_key" https://www.encodeproject.org/files/ENCFF508GKB/@@download/ENCFF508GKB.bam -o "$dest_dir/rep1.raw.bam"
-curl -L -u "$acess_key":"$secret_key" https://www.encodeproject.org/files/ENCFF394GCC/@@download/ENCFF394GCC.bam -o "$dest_dir/rep2.raw.bam"
-curl -L -u "$acess_key":"$secret_key" https://www.encodeproject.org/files/ENCFF122NQB/@@download/ENCFF122NQB.bed.gz -o "$dest_dir/peaks.bi.bed.gz"
-curl -L -u "$acess_key":"$secret_key" https://www.encodeproject.org/files/ENCFF931HXJ/@@download/ENCFF931HXJ.bed.gz -o "$dest_dir/peaks.uni.bed.gz"
+wget https://www.encodeproject.org/files/ENCFF508GKB/@@download/ENCFF508GKB.bam -O "$dest_dir/rep1.raw.bam"
+wget https://www.encodeproject.org/files/ENCFF394GCC/@@download/ENCFF394GCC.bam -O "$dest_dir/rep2.raw.bam"
+wget https://www.encodeproject.org/files/ENCFF122NQB/@@download/ENCFF122NQB.bed.gz -O "$dest_dir/peaks.bi.bed.gz"
+wget https://www.encodeproject.org/files/ENCFF931HXJ/@@download/ENCFF931HXJ.bed.gz -O "$dest_dir/peaks.uni.bed.gz"
 
 # annotations
 dest_dir="$annots_dir/HUVEC"
 mkdir -p "$dest_dir"
-curl -L -u "$acess_key":"$secret_key" https://www.encodeproject.org/files/ENCFF406AWN/@@download/ENCFF406AWN.bed.gz -o "$dest_dir/DNase_peaks.bed.gz"
+wget https://www.encodeproject.org/files/ENCFF406AWN/@@download/ENCFF406AWN.bed.gz -O "$dest_dir/DNase_peaks.bed.gz"
 
 
 ### Other Annoations
@@ -126,19 +123,18 @@ wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_41/gencod
 ### K562 CAGE
 
 raw_data_dir="$proj_dir/data/cage/raw"
-mkdir -p "$raw_data_dir"
+#mkdir -p "$raw_data_dir"
 
 dest_dir="$raw_data_dir/K562"
-mkdir -p "$dest_dir"
+#mkdir -p "$dest_dir"
 
 # bams (filtered?)
-wget https://www.encodeproject.org/files/ENCFF754FAU/@@download/ENCFF754FAU.bam -O "$dest_dir/rep1.raw.bam"
-wget https://www.encodeproject.org/files/ENCFF366MWI/@@download/ENCFF366MWI.bam -O "$dest_dir/rep2.raw.bam"
+#wget https://www.encodeproject.org/files/ENCFF754FAU/@@download/ENCFF754FAU.bam -O "$dest_dir/rep1.raw.bam"
+#wget https://www.encodeproject.org/files/ENCFF366MWI/@@download/ENCFF366MWI.bam -O "$dest_dir/rep2.raw.bam"
 
 # peak calls (per-replicate, not IDR; will use overlap between replicates)
-#wget https://www.encodeproject.org/files/ENCFF698DQS/@@download/ENCFF698DQS.bed.gz -O "$dest_dir/peaks.bed.gz"
-wget https://www.encodeproject.org/files/ENCFF638ZUQ/@@download/ENCFF638ZUQ.bed.gz -O "$dest_dir/peaks.rep1.bed.gz"
-wget https://www.encodeproject.org/files/ENCFF370YBR/@@download/ENCFF370YBR.bed.gz -O "$dest_dir/peaks.rep2.bed.gz"
+#wget https://www.encodeproject.org/files/ENCFF638ZUQ/@@download/ENCFF638ZUQ.bed.gz -O "$dest_dir/peaks.rep1.bed.gz"
+#wget https://www.encodeproject.org/files/ENCFF370YBR/@@download/ENCFF370YBR.bed.gz -O "$dest_dir/peaks.rep2.bed.gz"
 
 
 ### K562 RAMPAGE
@@ -156,9 +152,6 @@ wget https://www.encodeproject.org/files/ENCFF618CKG/@@download/ENCFF618CKG.bam 
 # peak calls (per-replicate, not IDR; will use overlap between replicates)
 wget https://www.encodeproject.org/files/ENCFF923WZG/@@download/ENCFF923WZG.bed.gz -O "$dest_dir/peaks.rep1.bed.gz"
 wget https://www.encodeproject.org/files/ENCFF954ZBU/@@download/ENCFF954ZBU.bed.gz -O "$dest_dir/peaks.rep2.bed.gz"
-
-
-
 
 
 echo "Done downloading data."
