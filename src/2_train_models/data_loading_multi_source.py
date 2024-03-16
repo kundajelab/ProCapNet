@@ -6,6 +6,11 @@ from math import ceil
 
 class MultiSourceSampler(Sampler):
     
+    ''' This class works with the PyTorch Data Loader setup to allow
+    the model to be trained on batches of data coming from multiple sources.
+    The fraction of each batch coming from each data source can be specified.
+    '''
+    
     def __init__(self, train_generator, source_totals, source_fracs,
                  batch_size):
         
@@ -57,7 +62,7 @@ class MultiSourceSampler(Sampler):
 def load_data_loader(genome_path, chrom_sizes, plus_bw_path, minus_bw_path,
                      peak_paths, source_fracs, mask_bw_path=None,
                      in_window=2114, out_window=1000, max_jitter=0,
-                     batch_size=64):
+                     batch_size=64, generator_random_seed=0):
     
     sequences_all_sources = []
     profiles_all_sources = []
@@ -106,7 +111,7 @@ def load_data_loader(genome_path, chrom_sizes, plus_bw_path, minus_bw_path,
                         masks=train_masks,
                         in_window=in_window,
                         out_window=out_window,
-                        random_state=0)
+                        random_state=generator_random_seed)
 
     multi_sampler = MultiSourceSampler(gen,
                                        [a.shape[0] for a in sequences_all_sources],

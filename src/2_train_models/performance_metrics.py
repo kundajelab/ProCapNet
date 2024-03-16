@@ -152,6 +152,8 @@ def _kl_divergence(probs1, probs2):
 
 
 def jensen_shannon_distance(probs1, probs2):
+    # Note from Kelly -- this actually returns the J-S Divergence, not distance!!!
+    
     """
     Computes the Jesnsen-Shannon distance in the last dimension of `probs1` and
     `probs2`. `probs1` and `probs2` must be the same shape. For example, if they

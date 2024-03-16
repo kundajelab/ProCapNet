@@ -7,9 +7,7 @@ import shutil
 
 
 # what model types are implemented (this must track with options allowed in train.py)
-MODEL_TYPES = ["strand_merged_umap", "stranded_umap", "strand_merged", "stranded",
-               "promoters_only_strand_merged_umap", "promoters_only_stranded_umap",
-               "promoters_only_strand_merged", "promoters_only_stranded", "strand_merged_umap_replicate"]
+MODEL_TYPES = ["strand_merged_umap", "promoters_only_strand_merged_umap", "strand_merged_umap_replicate"]
     
     
 class GeneralFilesConfig():
@@ -26,6 +24,8 @@ class GeneralFilesConfig():
         self.stranded_model = "stranded" in self.model_type
         self.umap = "umap" in self.model_type
         
+        # proj_dir is the root of the git repository, one level above src/
+        # (don't move this file or this will break)
         self.proj_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))) + "/"     
         
         ## Store filepaths to everything

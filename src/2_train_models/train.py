@@ -1,47 +1,64 @@
 import os
 import sys
-
-# expecting cell type, model_type, fold #, maybe gpu
-
-assert len(sys.argv) in [4,5], len(sys.argv)  
-cell_type, model_type, fold = sys.argv[1:4]
-if len(sys.argv) == 5:
-    os.environ["CUDA_VISIBLE_DEVICES"] = sys.argv[4]
-data_type = "procap"
-
+from torch.optim import Adam
 
 from data_loading_multi_source import load_data_loader
 from data_loading import extract_peaks
 
+from BPNet_strand_merged_umap import Model
+
 sys.path.append("../utils")
 from misc import ensure_parent_dir_exists
 
-from torch.optim import Adam
+
+# Script inputs: expecting cell type, model_type, fold #, maybe gpu
+
+assert len(sys.argv) in [5,6], len(sys.argv)  
+
+cell_type, model_type, data_type, fold = sys.argv[1:5]
+
+if len(sys.argv) == 5:
+    os.environ["CUDA_VISIBLE_DEVICES"] = sys.argv[5]
+
+
+possible_cell_types = ["K562", "A673", "CACO2", "CALU3", "HUVEC", "MCF10A"]
+assert cell_type in possible_cell_types, cell_type
+
+model_types = ["strand_merged_umap", "promoters_only_strand_merged_umap",
+               "strand_merged_umap_replicate"]
+assert model_type in model_types, model_type
+
+assert data_type in ["procap", "rampage", "cage"], data_type
+assert fold in ["1", "2", "3", "4", "5", "6", "7"], fold
 
 
 # Load Hyperparameters, Filepaths from Configs
 
-from file_configs import FoldFilesConfig as FilesConfig
+from hyperparams import DefaultParams as Params
+params = Params()
+
+
+if "promoters_only" in model_type:
+    # point to peak files that only have promoter-overlap peaks in them,
+    # and save these models in a different directory
+    print("Training model only on promoter examples.")
+    from file_configs_promoters_only import PromotersOnlyFoldFilesConfig as FilesConfig
+else:
+    from file_configs import FoldFilesConfig as FilesConfig
+
 config = FilesConfig(cell_type, model_type, fold, data_type = data_type)
 
 
+if "replicate" in model_type:
+    # if training replicate models, change the random seed
+    print("Training model with different random seed than normal.")
+    random_seed = 13169
+else:
+    random_seed = 0
+
+    
 # Init Model and Params Object
 
-if config.model_type == "strand_merged_umap":
-    from BPNet_strand_merged_umap import Model
-    
-elif config.model_type == "stranded_umap":
-    from BPNet_stranded_umap import Model
-elif config.model_type == "strand_merged":
-    from BPNet_strand_merged import Model
-elif config.model_type == "stranded":
-    from BPNet_stranded import Model
-else:
-    raise NotImplementedError(config.model_type + " is not a valid model type.")
-
-from hyperparams import DefaultParams as Params
-params = Params()
-    
 model = Model(config.model_save_path,
               n_filters=params.n_filters,
               n_layers=params.n_layers,
@@ -72,7 +89,8 @@ train_data_loader = load_data_loader(config.genome_path,
                                      params.in_window,
                                      params.out_window,
                                      params.max_jitter,
-                                     params.batch_size)
+                                     params.batch_size,
+                                     generator_random_seed=random_seed)
 
 val_sequences, val_profiles = extract_peaks(config.genome_path,
                                             config.chrom_sizes,
