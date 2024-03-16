@@ -371,6 +371,8 @@ def main():
                "THAP11", "YY1", "AP1", "TA-Inr", "CTCF", "ZBTB33", "TCT", "TATATA",
                "ATF4", "HNF1A/B", "TEAD", "FOX", "HNF4A/G"]
         prof_include = [1,0,5,3,6,4,7,14,10,12,11,15,17,25,22,19,13,8,31,16]
+        counts_motif_names = ["GRHL1", "CEBP"]
+        counts_include = [27, 31]
     if cell_type == "CALU3":
         prof_motif_names = ["BRE/SP", "CA-Inr", "ETS", "NFY", "NRF1", "ATF1", "TATA",
                "THAP11", "YY1", "AP1", "TA-Inr", "CTCF", "ZBTB33", "HNF1A/B"]
@@ -398,6 +400,14 @@ def main():
     
     counts_cwms = load_motif_cwms(counts_modisco_results, {"pos_patterns" : counts_include})
     counts_cwms = [counts_cwms["pos_patterns"]["pattern_" + str(motif_i)] for motif_i in counts_include]
+    
+    if cell_type == "A673":
+        # the only instance where a negative motif pattern is needed
+        counts_neg_cwms = load_motif_cwms(counts_modisco_results, {"neg_patterns" : [1]})
+        counts_neg_cwms = [counts_neg_cwms["neg_patterns"]["pattern_1"]]
+        counts_cwms += counts_neg_cwms
+
+        counts_motif_names += ["SNAI"]
     
     motif_names = prof_motif_names + counts_motif_names
     cwms = prof_cwms + counts_cwms
@@ -430,7 +440,9 @@ def main():
                     "CEBP" : 0.999,
                     "RFX" : 0.9999,
                     "EWS-FLI" : 0.9999,
-                    "IRF/STAT" : 0.9998}
+                    "IRF/STAT" : 0.9998,
+                    "SNAI" : 0.9999,
+                    "GRHL1" : 0.99999}
     
     attr_threshs = {"BRE/SP" : 0.975,
                     "CA-Inr" : 0.999,
@@ -455,7 +467,9 @@ def main():
                     "CEBP" : 0.975,
                     "RFX" : 0.975,
                     "EWS-FLI" : 0.9,
-                    "IRF/STAT" : 0.975}
+                    "IRF/STAT" : 0.975,
+                    "SNAI" : 0.985,
+                    "GRHL1" : 0.975}
     
     
     

@@ -9,7 +9,8 @@ chrom_sizes="/users/kcochran/projects/procapnet/genomes/hg38.chrom.sizes"
 
 tasks=( "profile" "counts" )
   
-cell_types=( "K562" "A673" "CACO2" "CALU3" "HUVEC" "MCF10A" )
+#cell_types=( "K562" "A673" "CACO2" "CALU3" "HUVEC" "MCF10A" )
+cell_types=( "CACO2" )
 
 for cell_type in "${cell_types[@]}"; do
   echo "$cell_type"

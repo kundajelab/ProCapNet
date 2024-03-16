@@ -51,7 +51,7 @@ modisco_results = load_modisco_results(modisco_results_path)
 motif_names_to_bold = ["BRE/SP", "CA-Inr", "ETS", "NFY", "NRF1", "ATF1", "TATA",
                        "THAP11", "YY1", "AP1", "TA-Inr", "CTCF", "ZBTB33", "TCT", "TATATA",
                        "ATF4", "HNF1A/B", "TEAD", "FOX", "HNF4A/G", "EWS-FLI", "IRF/STAT",
-                       "RFX", "CEBP", "SNAI", "GHRL"]
+                       "RFX", "CEBP", "SNAI", "GRHL1"]
 
 if cell_type == "K562":
     if task == "profile":

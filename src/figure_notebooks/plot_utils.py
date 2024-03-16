@@ -51,10 +51,11 @@ def jitter_dots(dots, jitter_by=0.25, along_y=False):
                                                     jitter_by,
                                                     offsets.shape[0])
     dots.set_offsets(jittered_offsets)
-
+    
     
 def plot_scatter_and_boxplot(data, position, color = "k", dot_size=1, dot_alpha=0.05,
-                             box_linewidth=1.5, box_whisker_linewidth=1):
+                             box_linewidth=1.5, box_whisker_linewidth=1,
+                             white_dot_size=3):
     
     if len(data) < 200:
         dot_alpha = 2 * dot_alpha
@@ -75,5 +76,9 @@ def plot_scatter_and_boxplot(data, position, color = "k", dot_size=1, dot_alpha=
              linewidth=box_linewidth, color=color, alpha=1, zorder=29)
 
     # draw median dot
-    plt.scatter(bps["med"], [position + 0.35], s=8, color="k", zorder=31)
-    plt.scatter(bps["med"], [position + 0.35], s=3, color="white", zorder=32)
+    if white_dot_size == 3:
+        black_dot_size = 8
+    else:
+        black_dot_size = white_dot_size * 2.5
+    plt.scatter(bps["med"], [position + 0.35], s=black_dot_size, color="k", zorder=31)
+    plt.scatter(bps["med"], [position + 0.35], s=white_dot_size, color="white", zorder=32)
