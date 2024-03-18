@@ -60,11 +60,7 @@ def load_coords(peak_bed, in_window=2114):
         mid = (peak_start + peak_end) // 2
         window_start = mid - in_window // 2
         window_end = mid + in_window // 2
-        
-        pos_summit = int(line[-2]) if line[-2].isdigit() else None
-        neg_summit = int(line[-1]) if line[-1].isdigit() else None
-        
-        coords.append((chrom, window_start, window_end, pos_summit, neg_summit))
+        coords.append((chrom, window_start, window_end))
     return coords
 
 

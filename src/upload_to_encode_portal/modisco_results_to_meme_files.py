@@ -15,7 +15,7 @@ if not meme_files_dest_dir.endswith("/"):
 os.makedirs(meme_files_dest_dir, exist_ok=True)
 
 sys.path.append("../5_modisco")
-from report_utils import load_modisco_results
+from modiscolite_utils import load_modisco_results
 
 sys.path.append("../figure_notebooks")
 from other_motif_utils import compute_per_position_ic

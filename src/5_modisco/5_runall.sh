@@ -1,14 +1,18 @@
 #!/bin/bash
 
-cell_type="K562"
+set -e
+
 model_type="strand_merged_umap"
 
 tasks=( "profile" "counts" )
 
-tasks=( "counts" )
-
 mkdir -p logs
 
-for task in "${tasks[@]}"; do
-  python modisco.py "$cell_type" "$model_type" "$task" | tee "logs/${cell_type}_${task}.log"
+cell_types=( "K562" "A673" "CACO2" "CALU3" "HUVEC" "MCF10A" )
+
+for cell_type in "${cell_types[@]}"; do
+  for task in "${tasks[@]}"; do
+    python modisco.py "$cell_type" "$model_type" "$task" | tee "logs/${cell_type}_${task}.log"
+  done
 done
+

@@ -9,6 +9,7 @@ configs/
 modisco_out/
 old_modisco_out/
 motif_calls_out/
+motifs_out/
 ism_out/
 __pycache__/
 */__pycache__/
@@ -16,9 +17,16 @@ __pycache__/
 .ipynb_checkpoints/
 */.ipynb_checkpoints/
 */*/.ipynb_checkpoints/
+__init__*
+*/*__init__*
+*/*/*__init__*
 */logs/
 */*log*
 */*/*log*
+*old*
+*/*old*
+*/*/*old*
+tars/
 src/_figure_notebooks/
 src/prime_editing/
 src/figure_notebooks/fig6_data/
@@ -26,3 +34,6 @@ src/figure_notebooks/fig7_data/
 src/figure_notebooks/fig_cell_types_union_preds/
 src/figure_notebooks/te_enrichment_files/
 src/variant-scorer/
+src/2_train_models/other_model_archs/
+src/3_eval_models/random_notebooks/
+src/4_interpret_models/debugging/

@@ -13,7 +13,7 @@ from file_configs import MergedFilesConfig
 from data_loading import extract_observed_profiles
 
 sys.path.append("../5_modisco")
-from report_utils import load_modisco_results
+from modiscolite_utils import load_modisco_results
 
 sys.path.append("../figure_notebooks")
 from other_motif_utils import compute_per_position_ic

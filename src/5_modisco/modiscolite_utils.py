@@ -5,10 +5,10 @@ import random
 import modiscolite
 import modiscolite.tfmodisco
 import modiscolite.util
-import viz_sequence
 
 sys.path.append("../2_train_models")
 from data_loading import extract_sequences, extract_observed_profiles
+
 sys.path.append("../utils")
 from misc import ensure_parent_dir_exists
 
@@ -90,3 +90,6 @@ def modisco(genome_path, chrom_sizes, peak_path, scores_path,
     else:
         return pos_patterns, neg_patterns
     
+
+def load_modisco_results(tfm_results_path):
+    return h5py.File(tfm_results_path, "r")
