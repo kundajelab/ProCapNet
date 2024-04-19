@@ -12,16 +12,27 @@ import sys
 sys.path.append("../utils")
 from misc import load_chrom_sizes
 
+primary_transcripts = True
+
+if primary_transcripts:
+    print("Running on primary transcripts.")
+    
+    regions_out_dir = "primary_transcripts_regions_to_predict/"
+    preds_dir = "primary_transcripts_predictions/"
+else:
+    regions_out_dir = "regions_to_predict/"
+    preds_dir = "predictions/"
+
+
 chrom_sizes = "genome/hg38.gencode_naming.chrom.sizes"
 chrom_sizes_dict = {k : v for (k,v) in load_chrom_sizes(chrom_sizes)}
 
-regions_out_dir = "regions_to_predict"
-TSSs_filepath = regions_out_dir + "/all_TSSs.bed.gz"
+TSSs_filepath = regions_out_dir + "all_TSSs.bed.gz"
 
 assert len(sys.argv) == 2, len(sys.argv)
 cell_type = sys.argv[1]
 
-preds_out_dir = "predictions/" + cell_type + "/"
+preds_out_dir = preds_dir + cell_type + "/"
 
 preds_bws = {"+" : preds_out_dir + "preds." + cell_type + ".pos.bigWig",
              "-" : preds_out_dir + "preds." + cell_type + ".neg.bigWig"}
@@ -113,9 +124,13 @@ def make_megatable(original_TSS_bed, scores, scores_norm, scores_log_norm, exten
 all_scores = make_megatable(TSSs_filepath, TSS_scores, TSS_scores_norm, TSS_scores_log_norm)
 
 
-
-def write_TSS_scores_to_bed(out_TSS_bed, megatable, extend_bys = extend_bys):
-    colnames = ["chrom", "start", "end", "strand", "support", "seq_tech", "capture"]
+def write_TSS_scores_to_bed(out_TSS_bed, megatable, extend_bys = extend_bys,
+                            primary_transcripts=primary_transcripts):
+    
+    if primary_transcripts:
+        colnames = ["chrom", "start", "end", "strand", "gene_type", "transcript_type"]
+    else:
+        colnames = ["chrom", "start", "end", "strand", "support", "seq_tech", "capture"]
     
     for extend_by in extend_bys:
         colnames.append("score_window_extended_" + str(extend_by) + "bp")

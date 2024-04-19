@@ -36,6 +36,7 @@ src/figure_notebooks/te_enrichment_files/
 src/variant-scorer/
 src/2_train_models/other_model_archs/
 src/3_eval_models/random_notebooks/
+src/3_eval_models/plots/
 src/4_interpret_models/debugging/
 src/GENCODE/*
 !src/GENCODE/*ipynb
@@ -43,3 +44,7 @@ src/GENCODE/*
 src/collabs/*
 !src/collabs/*ipynb
 !src/collabs/*py
+enhancer_promoter_compatibility/
+src/GENCODE_protein_coding/*
+!src/GENCODE_protein_coding/*ipynb
+!src/GENCODE_protein_coding/*py
