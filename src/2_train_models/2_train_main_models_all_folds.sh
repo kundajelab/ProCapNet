@@ -18,3 +18,7 @@ mkdir -p "logs"
 for fold in "${folds[@]}"; do
   python train.py "$cell_type" "$model_type" "$data_type" "$fold" "$GPU" | tee "logs/${cell_type}_${fold}.log"
 done
+
+echo "Done training, all folds."
+
+exit 0

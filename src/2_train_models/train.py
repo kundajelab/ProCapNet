@@ -17,7 +17,7 @@ assert len(sys.argv) in [5,6], len(sys.argv)
 
 cell_type, model_type, data_type, fold = sys.argv[1:5]
 
-if len(sys.argv) == 5:
+if len(sys.argv) == 6:
     os.environ["CUDA_VISIBLE_DEVICES"] = sys.argv[5]
 
 

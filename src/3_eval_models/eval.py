@@ -6,11 +6,11 @@ from eval_utils import run_eval
 sys.path.append("../2_train_models")
 
 
-assert len(sys.argv) in [5,6], len(sys.argv)  # expecting celltype, model_type, fold, timestamp, maybe gpu
+assert len(sys.argv) in [6,7], len(sys.argv)  # expecting celltype, model_type, data_type, fold, timestamp, maybe gpu
 
 cell_type, model_type, data_type, fold, timestamp = sys.argv[1:6]
 
-if len(sys.argv) == 6:
+if len(sys.argv) == 7:
     os.environ["CUDA_VISIBLE_DEVICES"] = sys.argv[6]
 
 possible_cell_types = ["K562", "A673", "CACO2", "CALU3", "HUVEC", "MCF10A"]

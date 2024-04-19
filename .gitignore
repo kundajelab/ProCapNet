@@ -37,3 +37,9 @@ src/variant-scorer/
 src/2_train_models/other_model_archs/
 src/3_eval_models/random_notebooks/
 src/4_interpret_models/debugging/
+src/GENCODE/*
+!src/GENCODE/*ipynb
+!src/GENCODE/*py
+src/collabs/*
+!src/collabs/*ipynb
+!src/collabs/*py

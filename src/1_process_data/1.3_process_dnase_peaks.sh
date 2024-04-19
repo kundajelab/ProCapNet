@@ -51,7 +51,7 @@ echo "DNase peaks that don't overlap $data_type peaks: $num_peaks_after"
 
 echo "Splitting DNase peaks by train/val/test chroms..."
 
-python _split_peaks_train_val_test.py "$dnase_peaks_no_expt_overlap_bed"
+python "$script_dir/_split_peaks_train_val_test.py" "$dnase_peaks_no_expt_overlap_bed"
 
 echo "Done."
 

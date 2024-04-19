@@ -45,7 +45,7 @@ if [[ "$data_type" == "procap" ]]; then
   # This script combines the lines in the two peak files,
   # retaining only the info that it makes sense to retain,
   # since the two files have different columns.
-  python _merge_uni_bi_peaks.py "$raw_uni_peaks" "$raw_bi_peaks" "$all_peaks"
+  python "$script_dir/_merge_uni_bi_peaks.py" "$raw_uni_peaks" "$raw_bi_peaks" "$all_peaks"
 
   # Check that the merged peak file has the same # lines as the two input files put together
   if [ `zcat "$raw_uni_peaks" "$raw_bi_peaks" | wc -l` -ne `zcat "$all_peaks" | wc -l` ]; then
@@ -76,7 +76,7 @@ fi
 
 echo "Splitting peaks into train/val/test sets by fold..."
 # Split the set of all peaks into train/val/test, according to chromosome
-python _split_peaks_train_val_test.py "$all_peaks"
+python "$script_dir/_split_peaks_train_val_test.py" "$all_peaks"
 
 echo "Peaks processed for cell type $cell_type."
 

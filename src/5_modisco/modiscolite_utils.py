@@ -1,6 +1,7 @@
 import sys
 import numpy as np
 import random
+import h5py
 
 import modiscolite
 import modiscolite.tfmodisco
