@@ -116,6 +116,7 @@ wget https://jaspar.genereg.net/download/data/2022/CORE/JASPAR2022_CORE_non-redu
 
 wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_41/gencode.v41.annotation.gtf.gz -O "$annots_dir/gencode.v41.annotation.gtf.gz"
 
+wget https://hgdownload.soe.ucsc.edu/goldenPath/hg38/phyloP100way/hg38.phyloP100way.bw -O "$annots_dir/hg38.phyloP100way.bw"
 
 
 ### CAGE and RAMPAGE
