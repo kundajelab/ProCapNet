@@ -38,5 +38,36 @@ echo "Peaks in union after merge: $num_peaks_after"
 
 rm "$all_peaks_tmp"
 
+python ./_split_peaks_train_val_test.py "$all_peaks"
+
+
+# Then, for K562 only, make same set of files but excluding K562 peaks (union of *other* cells)
+
+all_other_cell_type_peaks=`find "$processed_data_dir" -mindepth 1 -maxdepth 1 -type d | grep -v "K562" | sed -e 's|$|/peaks.bed.gz|'`
+
+echo "Peak set files to combine:"
+echo "$all_other_cell_type_peaks"
+
+all_other_peaks_tmp="$processed_data_dir/union_other_peaks.tmp.bed"
+all_other_peaks="$processed_data_dir/union_other_peaks.bed.gz"
+
+# First, combine the peak sets across all cell types into one file
+# drop everything from sex chromosomes because the samples are not all the same sex
+
+zcat $all_other_cell_type_peaks | grep -v "chrY" | grep -v "chrX" | sort -k1,1 -k2,2n > "$all_other_peaks_tmp"
+
+# Then merge the peaks if they overlap or are < 100bp apart
+
+bedtools merge -i "$all_other_peaks_tmp" -d 100 | shuf | gzip -nc > "$all_other_peaks"
+
+num_peaks_before=`wc -l < "$all_other_peaks_tmp"`
+echo "Peaks in union before merge: $num_peaks_before"
+num_peaks_after=`zcat "$all_other_peaks" | wc -l`
+echo "Peaks in union after merge: $num_peaks_after"
+
+rm "$all_other_peaks_tmp"
+
+python ./_split_peaks_train_val_test.py "$all_other_peaks"
+
 exit 0
 
