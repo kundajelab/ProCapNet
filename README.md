@@ -59,8 +59,8 @@ First, make a directory for everything to happen in, and move into that director
 ```
 mkdir -p "/users/me/procapnet"
 cd "/users/me/procapnet"
-git clone http://git@github.com/kundajelab/nascent_RNA_models.git
-cd nascent_RNA_models
+git clone http://git@github.com/kundajelab/ProCapNet.git
+cd ProCapNEt
 ```
 
 The script `setup_project_directory.sh` will build the directory structure for all the raw + processed data, all the models saved after training, and all model outputs.
@@ -78,7 +78,7 @@ For example, to populate your new data directory with data, and then process tha
 ```
 Note that in some cases, there are additional *optional* `runall.sh` scripts, which are for if you are looking to reproduce a specific, singular result far downstream of training models. For instance, `./src/1_process_data/1_runall.sh` processes all the data you need to train a model, get contribution scores and motifs, etc., while `./src/1_process_data/1_runall_optional_annotations.sh` will also process all the extra data needed to run the model evaluations stratified by various region classifications from Figure 1 of the paper. These optional scripts are also included in `run_everything.sh`, but you can skip running them if you don't need to produce the results that depend on them.
 
-Note #2: model training, prediction, and contribution score generation are expecting to be run on a GPU, and the `runall.sh` scripts for those steps expect an input argument specifying the ID of the GPU to use. If you're not sure what GPU Id to use, 0 is a good guess. 
+Note #2: model training, prediction, and contribution score generation are expecting to be run on a GPU, and the `runall.sh` scripts for those steps expect an input argument specifying the ID of the GPU to use. If you're not sure what GPU ID to use, 0 is a good guess. 
 
 Note #3: trained models are saved using unique identifiers -- namely, timestamp strings. To point the model prediction and contribution score scripts at the correct models, you will need to supply the timestamps of the models you trained. So for example, in `src/3_eval_models/3_runall.sh`, you would edit this line:
 ```
