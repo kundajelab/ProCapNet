@@ -58,8 +58,8 @@ class Model(torch.nn.Module):
         number of positions removed is 2*trimming.
     """
 
-    def __init__(self, model_save_path, n_filters=64, n_layers=8, n_outputs=2,  
-        alpha=1, trimming=None):
+    def __init__(self, model_save_path, n_filters=512, n_layers=8, n_outputs=2,  
+        alpha=1, trimming= (2114 - 1000) // 2):
         super(Model, self).__init__()
         self.n_filters = n_filters
         self.n_layers = n_layers
