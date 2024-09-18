@@ -95,13 +95,14 @@ That's it!
 ---
 
 ### Code credits:
-- Jacob Schreiber (@jmschrei)'s bpnetlite, tf-modiscolite, and other code snippets are the backbone of this repository
+- Jacob Schreiber (@jmschrei)'s bpnetlite, tf-modiscolite, and tangermeme repositories are the backbone of this repository
 - Alex Tseng (@amtseng)'s code for model training and evaluation in PyTorch is incorporated into bpnet-lite
 - Otherwise code is authored by Kelly Cochran (@kellycochran)
 
 ### Repositories this project uses
 - https://github.com/jmschrei/bpnet-lite
 - https://github.com/jmschrei/tfmodisco-lite
+- https://github.com/jmschrei/tangermeme
 
 
 ## Primary Dependencies
