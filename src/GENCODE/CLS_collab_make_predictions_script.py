@@ -1,9 +1,9 @@
 import sys
-assert len(sys.argv) == 3, len(sys.argv)  # expecting cell type, GPU
+assert len(sys.argv) == 3, len(sys.argv)  # expecting cell type, GPU ID
 cell_type, GPU = sys.argv[1], sys.argv[2]
 
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = GPU #"MIG-40f43250-998e-586a-ac37-d6520e92590f"
+os.environ["CUDA_VISIBLE_DEVICES"] = GPU
 
 import numpy as np
 from collections import defaultdict
@@ -24,6 +24,8 @@ sys.path.append("../utils")
 from misc import load_chrom_sizes, load_chrom_names
 
 
+# For each cell type, we have a set of ProCapNet models trained across 7 folds,
+# which are ID'd by their training timestamps below
 
 if cell_type == "K562":
     timestamps = ["2023-05-29_15-51-40", "2023-05-29_15-58-41", "2023-05-29_15-59-09",
@@ -54,34 +56,41 @@ else:
     quit()
     
     
+# where we will save all of the predictions generated
 out_dir = "predictions/" + cell_type + "/"
 os.makedirs(out_dir, exist_ok=True)
-    
-    
+
+
+# the input sequence length and output prediction window length
 in_window = 2114
 out_window = 1000
 
-model_type = "strand_merged_umap"
-
-chrom_sizes = "genome/hg38.gencode_naming.chrom.sizes"
 genome_path = "genome/hg38.gencode_naming.withrDNA.fasta"
+chrom_sizes = "genome/hg38.gencode_naming.chrom.sizes"
+
+# load chromosome info
+chrom_sizes_dict = {k : v for (k,v) in load_chrom_sizes(chrom_sizes)}
+chrom_names = sorted(list(chrom_sizes_dict.keys()))
+
+
+# everywhere to generate predictions for: made by CLS_collab_make_regions.ipynb
 
 all_regions_to_predict_filepath = "regions_to_predict/TSS_windows.merged.bed.gz"
 
-def get_fold_config(fold, timestamps, cell_type):
+
+
+# functions that return filepaths
+
+def get_fold_config(fold, timestamps, cell_type, model_type = "strand_merged_umap"):
     return FoldFilesConfig(cell_type, model_type, str(fold + 1), timestamps[fold], "procap")
-
-
-
-chrom_sizes_dict = {k : v for (k,v) in load_chrom_sizes(chrom_sizes)}
-chrom_names = sorted(list(chrom_sizes_dict.keys()))
 
 def get_regions_to_predict_chrom_filepath(chrom):
     return "regions_to_predict/TSS_windows.merged." + chrom + ".bed.gz"
 
 
 
-# Load in the sequences at pre-defined regions
+
+### Load in genome sequences at pre-defined regions
 
 
 def read_fasta_fast(filename, include_chroms=chrom_names, verbose=True):
@@ -93,8 +102,7 @@ def read_fasta_fast(filename, include_chroms=chrom_names, verbose=True):
     return chroms
 
 
-def load_sequences(genome_path, chrom_sizes, peak_path,
-                  verbose=False):
+def load_sequences(genome_path, chrom_sizes, peak_path, verbose=False):
 
     seqs = []
     seq_window_pad = (in_window - out_window) // 2
@@ -153,7 +161,9 @@ def load_sequences(genome_path, chrom_sizes, peak_path,
     return seqs
 
 
-# Load ProCapNet models (all folds)
+
+
+### Load ProCapNet models (all folds)
 
 def load_model(model_save_path):
     model = torch.load(model_save_path)
@@ -165,20 +175,27 @@ def load_all_models(timestamps, cell_type):
     for fold in range(len(timestamps)):
         model_path = get_fold_config(fold, timestamps, cell_type).model_save_path
         models.append(load_model(model_path))
-        
     return models
 
-models = load_all_models(timestamps, cell_type)
 
 
 
+
+### Generate predictions
 
 # for each region:
-# chunk sequence into all possible contiguous 2114bp tiles (model input size)
-# make a prediction for each chunk
-# put predictions into giant numpy array and merge overlapping predictions
+# chunk sequence into 2114bp tiles (model input size), with small stride
+# for each chunk, predict
+# put predictions into giant numpy array
+# merge prediction windows where they overlap
+
 
 def model_predict_with_rc(model, onehot_seq):
+    # this function makes a prediction for 1 model, for 1 sequence
+    
+    # it gets a prediction for both the original sequence and its reverse-complement,
+    # then averages the two, which tends to improve accuracy
+    
     model = model.cuda()
     with torch.no_grad():
         onehot_seq = onehot_seq[None, ...].cuda()
@@ -187,12 +204,13 @@ def model_predict_with_rc(model, onehot_seq):
     
     model = model.cpu()
     
-    # reverse-complement (strand-flip) BOTH of the predictions
+    # reverse-complement (strand-flip) BOTH the profile and counts predictions
     rc_pred_profiles = rc_pred_profiles[:, ::-1, ::-1]
     rc_pred_logcounts = rc_pred_logcounts[:, ::-1]
     
     # take the average prediction across the fwd and RC sequences
-    merged_pred_profiles = np.log(np.array([np.exp(pred_profiles), np.exp(rc_pred_profiles)]).mean(axis=0))
+    # (profile average is in raw probs space, not logits; counts average is in log counts space)
+    merged_pred_profiles = np.array([np.exp(pred_profiles), np.exp(rc_pred_profiles)]).mean(axis=0)
     merged_pred_logcounts = np.array([pred_logcounts, rc_pred_logcounts]).mean(axis=0)
     
     return merged_pred_profiles, merged_pred_logcounts
@@ -201,11 +219,13 @@ def model_predict_with_rc(model, onehot_seq):
 def predict_one_model(model, onehot_seq):
     with torch.no_grad():
         pred_prof, pred_logcounts = model_predict_with_rc(model, onehot_seq)
-        return np.exp(pred_prof).squeeze(), pred_logcounts.squeeze()
+    return pred_prof.squeeze(), pred_logcounts.squeeze()
 
 
 def predict_all_models(models, onehot_seq):
+    # if we can, we want to just do this function when possible -- it is all-in-one
     with torch.no_grad():
+        # generate preds for this seq across all model folds
         pred_profs_across_models = []
         pred_logcounts_across_models = []
         for model in models:
@@ -213,95 +233,83 @@ def predict_all_models(models, onehot_seq):
             pred_profs_across_models.append(pred_prof)
             pred_logcounts_across_models.append(pred_logcounts)
 
-        pred_prof_avg_across_models = np.mean(np.exp(np.array(pred_profs_across_models)), axis=0)
+        # average predictions across folds
+        pred_prof_avg_across_models = np.mean(np.array(pred_profs_across_models), axis=0)
         pred_counts_avg_across_models = np.exp(np.mean(np.array(pred_logcounts_across_models), axis=0))
 
+        # combine profile and counts preds into one scaled-profile prediction
         pred_prof_scaled = (pred_prof_avg_across_models * pred_counts_avg_across_models).squeeze()
         return pred_prof_scaled
 
 
 def predict_one_seq(onehot_seq, models, skip = 50):
+    # "skip" = the stride/offset between windows where predictions are generated
+    
     onehot_seq = torch.Tensor(onehot_seq).float()
     assert len(onehot_seq.shape) == 2 and onehot_seq.shape[0] == 4, onehot_seq.shape
+    
+    
+    # If we are lucky, the seq length will match the model's input length.
+    # In that case, just predict normally (no need to tile predictions).
     
     if onehot_seq.shape[-1] == in_window:
         return predict_all_models(models, onehot_seq)
     
-    # else, we need to tile:
+    # Else, we need to tile:
     
     num_seq_tiles = int(np.ceil((onehot_seq.shape[-1] - in_window) / skip + 1))
-
-    pred_profs_all = np.empty((len(models), num_seq_tiles, 2, onehot_seq.shape[-1] - (in_window - out_window)))
-    pred_logcounts_all = np.empty((len(models), num_seq_tiles))
-    pred_profs_all[:] = np.nan
-    
     tiles_to_do = list(skip * np.arange(0, num_seq_tiles - 1))
 
     assert len(tiles_to_do) > 0, (onehot_seq.shape, num_seq_tiles, onehot_seq.shape[-1] - in_window)
     # if not a nice even number of tiles to do vs. skips, tack on last window
     if tiles_to_do[-1] != onehot_seq.shape[1] - in_window:
         tiles_to_do.append(onehot_seq.shape[1] - in_window)
-
+    
     assert len(tiles_to_do) == num_seq_tiles, (len(tiles_to_do), num_seq_tiles)
-        
+    
+    
+    # initialize mega-numpy-arrays to fill in in for loops below
+    pred_profs_all = np.empty((len(models), num_seq_tiles, 2, onehot_seq.shape[-1] - (in_window - out_window)))
+    pred_logcounts_all = np.empty((len(models), num_seq_tiles))
+    pred_profs_all[:] = np.nan
+
+
     for model_i, model in enumerate(models):
         for tile_i, tile_i_skip in enumerate(tiles_to_do):
             assert tile_i_skip + in_window <= onehot_seq.shape[1], (tile_i_skip + in_window, onehot_seq.shape[1])
+            
+            # get sequence for this tile
             seq_tile = onehot_seq[:, tile_i_skip : tile_i_skip + in_window]
             
+            # predict
             pred_prof, pred_logcounts = predict_one_model(model, seq_tile)
 
             goal_shape = pred_profs_all[model_i, tile_i, :, tile_i_skip : pred_prof.shape[-1] + tile_i_skip].shape
             assert goal_shape == pred_prof.shape, (goal_shape, pred_prof.shape)
 
+            # insert predictions into mega-numpy-array
             pred_profs_all[model_i, tile_i, :, tile_i_skip : pred_prof.shape[-1] + tile_i_skip] = pred_prof
-            
             pred_logcounts_all[model_i, tile_i] = pred_logcounts
     
-    # then, first merge across models
+    # then, first merge predictions across models
     pred_profs = pred_profs_all.mean(axis=0)
     pred_logcounts = pred_logcounts_all.mean(axis=0)
     
-    # then combine counts and profile preds
+    # second, combine counts and profile preds into one scaled prediction per tile
     pred_profs_scaled = pred_profs * np.exp(pred_logcounts)[:, None, None]
     
-    # finally, merge across tiles
+    # finally, average predictions across all tiles
     preds_final = np.nanmean(pred_profs_scaled, axis=0)
     
-    # I checked by making plots and it looks right
-    
+    # (I checked by making plots and things look right)
     return preds_final
 
 
-# the step that takes a long time
 
-for chrom in chrom_names:
-    regions_to_predict_this_chrom = get_regions_to_predict_chrom_filepath(chrom)
-    
-    if not os.path.exists(regions_to_predict_this_chrom):
-        print("Skipping ", chrom)
-        continue
-    
-    # if starting from a run that failed part way through, don't re-run finished chroms
-    if os.path.exists(out_dir + "preds." + chrom + ".npy"):
-        print("Found preds for " + chrom)
-        continue
-        
-    onehot_seqs = load_sequences(genome_path, chrom_sizes, regions_to_predict_this_chrom)
-    
-    preds_this_chrom = []
-    for seq in tqdm(onehot_seqs):
-        pred = predict_one_seq(seq, models)
-        preds_this_chrom.append(pred)
 
-    # hack to save ragged array
-    preds_arr = np.empty(len(preds_this_chrom), dtype=object)
-    preds_arr[:] = preds_this_chrom
-    np.save(out_dir + "preds." + chrom + ".npy", preds_arr)
-    
-    
 
-# Finally, convert predictions into bigwig format (from numpy arrays)
+
+### Convert predictions from numpy arrays to bigwigs
 
 def load_coords(bed_file):
     # loads bed file into list of regions, 1 element in list = 1 row of file
@@ -394,6 +402,42 @@ def write_tracks_to_bigwigs_by_chrom(preds_dir, save_filepath,
                            starts, ends = ends, values = values_to_write)
     
         bw.close()
+        
+        
+        
+        
+        
+        
+        
+### Go
+
+models = load_all_models(timestamps, cell_type)
+
+
+for chrom in chrom_names:
+    regions_to_predict_this_chrom = get_regions_to_predict_chrom_filepath(chrom)
+    
+    # we can ignore some scaffolds and such
+    if not os.path.exists(regions_to_predict_this_chrom):
+        print("Skipping ", chrom)
+        continue
+    
+    # if starting from a run that failed part way through, don't re-run finished chroms
+    if os.path.exists(out_dir + "preds." + chrom + ".npy"):
+        print("Found preds for " + chrom)
+        continue
+        
+    onehot_seqs = load_sequences(genome_path, chrom_sizes, regions_to_predict_this_chrom)
+    
+    preds_this_chrom = []
+    for seq in tqdm(onehot_seqs):
+        pred = predict_one_seq(seq, models)
+        preds_this_chrom.append(pred)
+
+    # hacky way to save ragged array
+    preds_arr = np.empty(len(preds_this_chrom), dtype=object)
+    preds_arr[:] = preds_this_chrom
+    np.save(out_dir + "preds." + chrom + ".npy", preds_arr)
 
 
 write_tracks_to_bigwigs_by_chrom(out_dir, out_dir + "preds." + cell_type, chrom_sizes)
