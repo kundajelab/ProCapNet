@@ -8,6 +8,10 @@ In this project, we trained a neural network to predict transcription initiation
 
 ### Quick-access Roadmap: Why Are You Here?
 
+**0. I want to make a model prediction or get model importance / contribution scores for my favorite DNA sequence using ProCapNet.**
+
+This repository is optimized for reproducing the work in the paper; you might be more interested in using the following stand-alone Colab notebook, which downloads ProCapNet already-trained models from the ENCODE portal and shows how to make predictions or generate scores: https://colab.research.google.com/drive/18H0cUVEksnDKV0STLuemrI1rW7YDj4Gw?usp=sharing 
+
 **1. I want to download the same dataset(s) you used.**
 
 See `src/0_download_files/0.1_download_data.sh` -- this script shows how most data files were downloaded from the ENCODE portal, including the PRO-cap experiments, DNase peaks, candidate cis-regulatory element annotations, and RAMPAGE experiments, in all cell types used in the paper. For the chromatin accessibility and histone modification datasets used in the cross-cell-type analysis, see `src/0_download_files/0.2_download_histone_marks.sh`. For ENCODE accession IDs for each experiment, see the Supplemental Table in the manuscript.
@@ -24,7 +28,7 @@ See `src/2_train_models/BPNet_strand_merged_umap.py` for the model architecture 
 
 Model hyperparameters are stored in `2_train_models/hyperparams.py`.
 
-**4. I want to see how final model predictions or contribution scores / DeepSHAP scores / sequence attributions were generated.**
+**4. I want to see how final model predictions or importance scores / contribution scores / DeepSHAP scores / sequence attributions were generated.**
 
 See the scripts in `src/3_eval_models`, particularly `src/3_eval_models/eval_utils.py`, for the former.
 
