@@ -1,12 +1,16 @@
 # ProCapNet: Dissecting the *cis*-regulatory syntax of transcription initiation with deep learning
 
-This repository contains all of the code used for data downloading and processing, model training, evaluation, and interpretation, and downstream analyses used in the ProCapNet paper (add link here once it's up on BioRxiv).
+This repository contains all of the code used for data downloading and processing, model training, evaluation, and interpretation, and downstream analyses used in the ProCapNet paper (preprint: https://www.biorxiv.org/content/10.1101/2024.05.28.596138v2).
 
 In this project, we trained a neural network to predict transcription initiation (measured by PRO-cap experiments) at base-resolution using the BPNet model framework. We then interpreted the model to discover initiation-predictive sequence motifs, characterize how the epistasis between these motifs regulates the rate and positioning of transcription initiation, investigate the sequence logic behind enhancer-RNA, and more.
 
 ---
 
 ### Quick-access Roadmap: Why Are You Here?
+
+**0. I want to make a model prediction or get model importance / contribution scores for my favorite DNA sequence using ProCapNet.**
+
+This repository is optimized for reproducing the work in the paper; you might be more interested in using the following stand-alone Colab notebook, which downloads ProCapNet already-trained models from the ENCODE portal and shows how to make predictions or generate scores: https://colab.research.google.com/drive/18H0cUVEksnDKV0STLuemrI1rW7YDj4Gw?usp=sharing 
 
 **1. I want to download the same dataset(s) you used.**
 
@@ -24,7 +28,7 @@ See `src/2_train_models/BPNet_strand_merged_umap.py` for the model architecture 
 
 Model hyperparameters are stored in `2_train_models/hyperparams.py`.
 
-**4. I want to see how final model predictions or contribution scores / DeepSHAP scores / sequence attributions were generated.**
+**4. I want to see how final model predictions or importance scores / contribution scores / DeepSHAP scores / sequence attributions were generated.**
 
 See the scripts in `src/3_eval_models`, particularly `src/3_eval_models/eval_utils.py`, for the former.
 
