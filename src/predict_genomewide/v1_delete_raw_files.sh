@@ -13,8 +13,8 @@ fold_dirs=`ls -d $raw_preds_dir/*/ | grep -v "merged"`
 echo $fold_dirs
 
 for fold_dir in `ls -d $raw_preds_dir/*/ | grep -v "merged"`; do
-echo "${fold_dir}"
-rm -r "$fold_dir"
+  echo "${fold_dir}"
+  rm -r "$fold_dir"
 done
 
 exit 0

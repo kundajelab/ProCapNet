@@ -16,11 +16,14 @@ chroms=( "chr1" "chr2" "chr3" "chr4" "chr5" "chr6" "chr7" "chr8" "chr9" "chr10" 
 
 for cell_type in "${cell_types[@]}"; do
   for chrom in "${chroms[@]}"; do
-    ./predict_hg38.sh "$cell_type" "$chrom" "$GPU" || exit 1
-  done
-done
+    ./v1_predict_hg38.sh "$cell_type" "$chrom" "$GPU" || exit 1
+    ./v1_process_preds.sh "$cell_type" "$chrom"  || exit 1
 
-# run after you've got predictions for all the chromosomes in a cell type
-./write_bigwigs.sh
+    #./v1_delete_raw_files.sh "$cell_type" "$chrom"
+  done
+  
+  # run after you've got predictions for all the chromosomes in a cell type
+  python v1_merge_chrom_bigwigs_to_make_genomewide_bigwigs.py "$cell_type" || exit 1
+done
 
 exit 0

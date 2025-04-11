@@ -12,7 +12,7 @@ chrom=$2
 mkdir -p logs
 
 echo "$cell_type" "$chrom"
-python process_whole_chromosome_preds.py "$cell_type" "$chrom" | tee -a "logs/process_${cell_type}_${chrom}.txt"
+python v1_process_preds_whole_chromosome.py "$cell_type" "$chrom" | tee -a "logs/process_${cell_type}_${chrom}.txt"
 
 echo "End of processing script."
 

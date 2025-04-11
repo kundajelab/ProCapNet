@@ -1,16 +1,16 @@
 import os
 import numpy as np
 import pyBigWig
+import sys
 
+assert len(sys.argv) == 2, sys.argv
+cell_type = sys.argv[1]
 
 which_genome = "hg38"
 
 chroms_to_use = ["chr" + str(i+1) for i in range(22)] + ["chrX", "chrY"]
 
 chrom_sizes_filepath = which_genome + "/" + which_genome + ".chrom.sizes"
-
-
-cell_types = ["K562", "A673", "CACO2", "CALU3", "HUVEC", "MCF10A"]
 
 
 
@@ -93,12 +93,11 @@ def merge_chrom_bigwigs_whole_genome(cell_type, pos_or_neg,
     wg_bw.close()
         
         
-for cell_type in cell_types:
-    for strand in ["pos", "neg"]:
-        print("Cell type:", cell_type)
-        print("Strand:", strand)
-        
-        merge_chrom_bigwigs_whole_genome(cell_type, strand)
+for strand in ["pos", "neg"]:
+    print("Cell type:", cell_type)
+    print("Strand:", strand)
+
+    merge_chrom_bigwigs_whole_genome(cell_type, strand)
 
 
 print("Done!")

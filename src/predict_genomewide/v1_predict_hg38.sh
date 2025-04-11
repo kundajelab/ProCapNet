@@ -13,7 +13,7 @@ GPU=$3
 mkdir -p logs
 
 echo "$cell_type" "$chrom"
-python raw_predict_whole_chromosomes.py "$cell_type" "$chrom" "$GPU" | tee -a "logs/raw_preds_${cell_type}_${chrom}.txt"
+python v1_predict_whole_chromosome_in_chunks.py "$cell_type" "$chrom" "$GPU" | tee -a "logs/raw_preds_${cell_type}_${chrom}.txt"
 
 echo "End of predict script."
 
