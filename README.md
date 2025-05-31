@@ -46,7 +46,11 @@ Motif instance calling was performed using the following script: `src/6_call_mot
 
 See `src/figure_notebooks/`. Each figure and table in the paper has an associated jupyter notebook (the analyses for some supplementary figures and tables are contained within the main figure's notebook). The notebooks contain all the code to go from the outputs of the folders numbered 1-6 in `src/` (model prediction, contribution scoring, motif calling) to the plots in the figures themselves.
 
-**7. I want to re-run your entire workflow.**
+**7. I want to train or interpret my own ProCapNet model on a dataset of my own; also, I am having trouble running the code as-is and want a streamlined version.**
+
+See `src/standalone_scripts/`. All you need to do is change the filepaths at the top of the script to point to your data and desired results save paths.
+
+**8. I want to re-run your entire workflow, as it was run for the manuscript.**
 
 See below!
 
