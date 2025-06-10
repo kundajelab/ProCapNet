@@ -1,7 +1,7 @@
 # set the variables and filepaths below:
 
 # GPU_ID is the NVIDIA string identifier for the GPU on your machine
-GPU_ID = "MIG-166d7783-762d-5f61-b31c-549eb4e0fba0"
+GPU_ID = "MIG-f80e9374-504a-571b-bac0-6fb00750db4c"
 
 # what is the max value for the mappability tracks (mask_bw_path below)?
 MASK_MAX = 1
@@ -13,7 +13,7 @@ class FilePaths():
     
     def __init__(self):
         # filepath for where the trained model will be saved eventually
-        self.model_save_path = "test_05312025.model"
+        self.model_save_path = "test_06102025.model"
         
         # filepath for fasta for reference genome
         self.genome_path = '/mnt/lab_data2/kcochran/procapnet/genomes/hg38.withrDNA.fasta'
@@ -30,10 +30,6 @@ class FilePaths():
         self.train_peak_path = '/mnt/lab_data2/kcochran/procapnet/data/procap/processed/K562/peaks_fold1_train.bed.gz'
         # filepath for PRO-cap peak regions to eval the model on, mid-training:
         self.val_peak_path = '/mnt/lab_data2/kcochran/procapnet/data/procap/processed/K562/peaks_fold1_val.bed.gz'
-        
-        # filepath for regions not overlapping PRO-cap peaks to train with, as "background":
-        # bed file with 3+ columns in format (chrom, region_start_coord, region_end_coord)
-        self.dnase_train_path = '/mnt/lab_data2/kcochran/procapnet/data/procap/processed/K562/dnase_peaks_no_procap_overlap_fold1_train.bed.gz'
         
         # filepath for a bigwig containing 0-to-1 float values,
         # corresponding to how mappable each base is, according to Michael Hoffman's Umap tracks
@@ -63,10 +59,6 @@ class Params():
         self.out_window = 1000
         self.trimming = (self.in_window - self.out_window) // 2
         self.max_jitter = 200
-        
-        # what fraction of each batch is peaks vs. background DHSs
-        # (list of 2 floats, which should sum to 1)
-        self.source_fracs = [0.875, 0.125]
         
         self.random_seed = 0
 
@@ -871,67 +863,44 @@ class MultiSourceSampler(Sampler):
 
                 
 def load_data_loader(genome_path, chrom_sizes, plus_bw_path, minus_bw_path,
-                     peak_paths, source_fracs, mask_bw_path=None,
+                     peak_path, mask_bw_path=None,
                      in_window=2114, out_window=1000, max_jitter=0,
                      batch_size=64, generator_random_seed=0):
     
-    sequences_all_sources = []
-    profiles_all_sources = []
-    
     if mask_bw_path:
-        masks_all_sources = []
-    
-        for peak_path in peak_paths:
-            sequences, profiles, masks = extract_peaks(genome_path,
-                                                       chrom_sizes,
-                                                       plus_bw_path,
-                                                       minus_bw_path,
-                                                       peak_path,
-                                                       mask_bw_path=mask_bw_path,
-                                                       in_window=in_window,
-                                                       out_window=out_window,
-                                                       max_jitter=max_jitter,
-                                                       verbose=True)
-            sequences_all_sources.append(sequences)
-            profiles_all_sources.append(profiles)
-            masks_all_sources.append(masks)
-    
-        train_masks = np.concatenate(masks_all_sources)
-    
+        sequences, profiles, masks = extract_peaks(genome_path,
+                                                   chrom_sizes,
+                                                   plus_bw_path,
+                                                   minus_bw_path,
+                                                   peak_path,
+                                                   mask_bw_path=mask_bw_path,
+                                                   in_window=in_window,
+                                                   out_window=out_window,
+                                                   max_jitter=max_jitter,
+                                                   verbose=True)
     else:
-        for peak_path in peak_paths:
-            sequences, profiles = extract_peaks(genome_path,
-                                                chrom_sizes,
-                                                plus_bw_path,
-                                                minus_bw_path,
-                                                peak_path,
-                                                in_window=in_window,
-                                                out_window=out_window,
-                                                max_jitter=max_jitter,
-                                                verbose=True)
-            sequences_all_sources.append(sequences)
-            profiles_all_sources.append(profiles)
-    
-        train_masks = None
-            
-    train_sequences = np.concatenate(sequences_all_sources)
-    train_signals = np.concatenate(profiles_all_sources)
+        sequences, profiles = extract_peaks(genome_path,
+                                            chrom_sizes,
+                                            plus_bw_path,
+                                            minus_bw_path,
+                                            peak_path,
+                                            in_window=in_window,
+                                            out_window=out_window,
+                                            max_jitter=max_jitter,
+                                            verbose=True)
+        masks = None
 
-    gen = DataGenerator(sequences=train_sequences,
-                        signals=train_signals,
-                        masks=train_masks,
+    gen = DataGenerator(sequences=sequences,
+                        signals=profiles,
+                        masks=masks,
                         in_window=in_window,
                         out_window=out_window,
                         random_state=generator_random_seed)
 
-    multi_sampler = MultiSourceSampler(gen,
-                                       [a.shape[0] for a in sequences_all_sources],
-                                       source_fracs, batch_size)
-
     train_data = torch.utils.data.DataLoader(gen,
                                              batch_size=batch_size,
                                              pin_memory=True,
-                                             sampler=multi_sampler)
+                                             shuffle=True)
     return train_data
 
 
@@ -940,8 +909,7 @@ train_data_loader = load_data_loader(config.genome_path,
                                      config.chrom_sizes,
                                      config.plus_bw_path,
                                      config.minus_bw_path,
-                                     [config.train_peak_path, config.dnase_train_path],
-                                     params.source_fracs,
+                                     config.train_peak_path,
                                      config.mask_bw_path,
                                      params.in_window,
                                      params.out_window,
