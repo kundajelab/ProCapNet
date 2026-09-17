@@ -16,6 +16,9 @@ python "$script_dir/make_housekeeping_promoter_annotations.py"
 "$script_dir/make_peak_union_across_cell_types.sh"
 
 # for the promoters-only ProCapNet trained for the promtoers vs. enhancers analysis
-"$script_dir//make_promoters_only_peak_files.sh"
+"$script_dir/make_promoters_only_peak_files.sh"
+
+# to generate train-val-test split files of CpG-matched sites w.r.t. PRO-cap peaks
+#"$script_dir/cpg_matching/get_cpg_matched_negatives.sh"
 
 exit 0

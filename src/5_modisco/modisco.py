@@ -12,7 +12,6 @@ sys.path.append("../2_train_models")
 from file_configs import MergedFilesConfig
 config = MergedFilesConfig(cell_type, model_type, data_type)
 
-
 from modiscolite_utils import modisco
 
 

@@ -7,7 +7,8 @@ import shutil
 
 
 # what model types are implemented (this must track with options allowed in train.py)
-MODEL_TYPES = ["strand_merged_umap", "promoters_only_strand_merged_umap", "strand_merged_umap_replicate"]
+MODEL_TYPES = ["strand_merged_umap", "promoters_only_strand_merged_umap", "strand_merged_umap_replicate",
+               "cpg_matched_negs_strand_merged_umap", "cell_union_negs_strand_merged_umap"]
     
     
 class GeneralFilesConfig():
