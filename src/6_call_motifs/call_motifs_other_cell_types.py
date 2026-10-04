@@ -131,9 +131,9 @@ def seq_scores_to_hits(scores, seq_threshs, motif_names):
     hits = []
     for motif_i in range(scores.shape[-2]):
         motif_scores = np.log1p(scores[..., motif_i, :])
-        where_high = (motif_scores > seq_threshs[motif_names[motif_i]]).nonzero()
-        #thresh = np.quantile(motif_scores.flatten(), seq_threshs[motif_names[motif_i]])
-        #where_high = (motif_scores > thresh).nonzero()
+        #where_high = (motif_scores > seq_threshs[motif_names[motif_i]]).nonzero()
+        thresh = np.quantile(motif_scores.flatten(), seq_threshs[motif_names[motif_i]])
+        where_high = (motif_scores > thresh).nonzero()
         hits.append(np.array(where_high))
     return hits
 
@@ -423,33 +423,34 @@ def main():
     
     
     # test these out and fiddle with them in the notebook
-    
-    seq_threshs = {"BRE/SP" : 0.72,
-                    "CA-Inr" : 0.87,
-                    "ETS" : 0.63,
-                    "NFY" : 0.81,
-                    "NRF1" : 0.56,
-                    "ATF1" : 0.66,
-                    "TATA" : 0.81,
-                    "THAP11" : 0.48,
-                    "YY1" : 0.55,
-                    "AP1" : 0.72,
-                    "TA-Inr" : 1.02,
-                    "CTCF" : 0.63,
-                    "ZBTB33" : 0.69,
-                    "TCT" : 0.61,
-                    "TATATA" : 0.75,
-                    "ATF4" : 0.64,
-                    "EWS-FLI" : 0.49,
-                    "SNAI" : 0.68,
-                    "HNF1A/B" : 0.65,
-                    "TEAD" : 0.66,
-                    "FOX" : 0.53,
-                    "HNF4A/G" : 0.56,
-                    "GRHL1" : 0.52,
-                    "CEBP" : 0.46,
-                    "RFX" : 0.57,
-                    "IRF/STAT" : 0.58}
+    # (to make thresholds consistent across cell types, switch to quantiles;
+    # equivalent to the absolute threshold for K562)
+    seq_threshs = {"BRE/SP" : 0.9964554811,
+                    "CA-Inr" : 0.9348683587,
+                    "ETS" : 0.9993171805,
+                    "NFY" : 0.9988540347,
+                    "NRF1" : 0.9990283846,
+                    "ATF1" : 0.9994912639,
+                    "TATA" : 0.9990056365,
+                    "THAP11" : 0.999951180147,
+                    "YY1" : 0.9999785218,
+                    "AP1" : 0.9995172729,
+                    "TA-Inr" : 0.9622725538,
+                    "CTCF" : 0.9999838521,
+                    "ZBTB33" : 0.9999358318,
+                    "TCT" : 0.9944938606,
+                    "TATATA" : 0.9976544522,
+                    "ATF4" : 0.9995,
+                    "HNF1A/B" : 0.999995,
+                    "TEAD" : 0.999,
+                    "FOX" : 0.9999,
+                    "HNF4A/G" : 0.9995,
+                    "CEBP" : 0.999,
+                    "RFX" : 0.9999,
+                    "EWS-FLI" : 0.9999,
+                    "IRF/STAT" : 0.9998,
+                    "SNAI" : 0.9999,
+                    "GRHL1" : 0.99999}
     
     attr_threshs = {"BRE/SP" : 0.975,
                     "CA-Inr" : 0.999,

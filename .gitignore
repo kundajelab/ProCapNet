@@ -34,12 +34,14 @@ defense_figures/
 figures_revisions/
 src/figure_notebooks/fig6_data/
 src/figure_notebooks/fig7_data/
+src/figure_notebooks/fig5_data/
 src/figure_notebooks/fig_cell_types_union_preds/
 src/figure_notebooks/te_enrichment_files/
 src/2_train_models/other_model_archs/
 src/3_eval_models/random_notebooks/
 src/3_eval_models/plots/
 src/4_interpret_models/debugging/
+src/5_modisco/tmp_meme_files/
 src/GENCODE/
 !src/GENCODE/*ipynb
 !src/GENCODE/*py
@@ -51,3 +53,5 @@ src/predict_genomewide/tmp_beds/
 src/GENCODE_protein_coding/*
 !src/GENCODE_protein_coding/*ipynb
 !src/GENCODE_protein_coding/*py
+figures_final/
+wg_preds/
